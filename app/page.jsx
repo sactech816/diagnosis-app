@@ -99,6 +99,7 @@ const Header = ({ setPage, isAdmin, user, onLogout, setShowAuth }) => (
     </div>
 );
 
+// 1. Auth Modal (管理者用ログイン・新規登録)
 const AuthModal = ({ isOpen, onClose, setUser }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
@@ -110,15 +111,24 @@ const AuthModal = ({ isOpen, onClose, setUser }) => {
     const handleAuth = async (e) => {
         e.preventDefault(); setLoading(true);
         try {
+            // 修正箇所: 新規登録時にリダイレクト先を明示的に指定
             const { data, error } = isLogin 
                 ? await supabase.auth.signInWithPassword({ email, password })
-                : await supabase.auth.signUp({ email, password });
+                : await supabase.auth.signUp({ 
+                    email, 
+                    password,
+                    options: { 
+                        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined 
+                    }
+                  });
+            
             if (error) throw error;
+
             if (isLogin && data.user) { 
                 setUser(data.user); onClose(); 
             } else if (!isLogin && data.user) {
-                // 自動ログイン設定にしていない場合のアラート
-                if (!data.session) alert('確認メールを送信しました。メール内のリンクをクリックしてください。');
+                // 自動ログイン設定ではない場合のアラート
+                if (!data.session) alert('確認メールを送信しました。メール内のリンクをクリックして認証を完了させてください。');
                 else { setUser(data.user); onClose(); }
             }
         } catch (e) { alert(e.message); } finally { setLoading(false); }
