@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 // --- 設定エリア ---
-const ADMIN_EMAIL = "admin@example.com"; 
+const ADMIN_EMAIL = "info@kei-sho.co.jp"; 
 // ----------------
 
 // --- Supabase Config ---
@@ -462,78 +462,105 @@ const ResultView = ({ quiz, result, onRetry, onBack }) => {
   );
 };
 
+// 5. Quiz Player (ランダム表示対応版)
 const QuizPlayer = ({ quiz, onBack }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [result, setResult] = useState(null);
+    const [currentStep, setCurrentStep] = useState(0);
+    const [answers, setAnswers] = useState({});
+    const [result, setResult] = useState(null);
+    const [playableQuestions, setPlayableQuestions] = useState(null); // シャッフル後の質問データ
+    
+    // 初期化（閲覧数カウント ＆ 選択肢シャッフル）
+    useEffect(() => {
+      if(supabase) supabase.rpc('increment_views', { row_id: quiz.id });
   
-  useEffect(() => {
-    if(supabase) supabase.rpc('increment_views', { row_id: quiz.id });
-  }, []);
-
-  const parseJson = (data) => typeof data === 'string' ? JSON.parse(data) : data;
-  const questions = parseJson(quiz.questions);
-  const results = parseJson(quiz.results);
-
-  const handleAnswer = (option) => {
-    const newAnswers = { ...answers, [currentStep]: option };
-    setAnswers(newAnswers);
-    if (currentStep + 1 < questions.length) { 
-        setCurrentStep(currentStep + 1); 
-    } else { 
-        setResult(calculateResult(newAnswers, results)); 
+      // データパースとシャッフル処理
+      const rawQuestions = typeof quiz.questions === 'string' ? JSON.parse(quiz.questions) : quiz.questions;
+      
+      // 質問ごとの選択肢をシャッフルする関数
+      const shuffleArray = (array) => {
+          const newArr = [...array];
+          for (let i = newArr.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+          }
+          return newArr;
+      };
+  
+      // 全質問の選択肢をシャッフルしてセット
+      const shuffled = rawQuestions.map(q => ({
+          ...q,
+          options: shuffleArray(q.options)
+      }));
+      
+      setPlayableQuestions(shuffled);
+    }, []); // 最初の1回だけ実行
+  
+    const results = typeof quiz.results === 'string' ? JSON.parse(quiz.results) : quiz.results;
+  
+    const handleAnswer = (option) => {
+      const newAnswers = { ...answers, [currentStep]: option };
+      setAnswers(newAnswers);
+      if (currentStep + 1 < playableQuestions.length) { 
+          setCurrentStep(currentStep + 1); 
+      } else { 
+          setResult(calculateResult(newAnswers, results)); 
+      }
+    };
+  
+    // 読み込み中（シャッフル処理待ち）の表示
+    if (!playableQuestions || !results) {
+        return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-indigo-600" size={40}/></div>;
     }
-  };
-
-  if (result) { 
-      return (
-        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-            <SEO title={`${result.title} | 診断結果`} description={result.description.substring(0, 100)} />
-            <ResultView quiz={quiz} result={result} onRetry={() => {setResult(null); setCurrentStep(0); setAnswers({});}} onBack={onBack} />
-        </div>
-      ); 
-  }
   
-  const question = questions[currentStep];
-  const progress = Math.round(((currentStep)/questions.length)*100);
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-6 font-sans">
-      <SEO title={`${quiz.title} | 診断中`} description={quiz.description} />
-      <div className="w-full max-w-md mb-4 px-4">
-          <button onClick={onBack} className="text-gray-500 font-bold flex items-center gap-1 hover:text-gray-800"><ArrowLeft size={16}/> 戻る</button>
-      </div>
-      <div className="max-w-md mx-auto w-full px-4">
-        {/* Colorful Header */}
-        <div className={`${quiz.color || 'bg-indigo-600'} text-white rounded-t-3xl p-6 text-center shadow-lg transition-colors duration-500 relative overflow-hidden`}>
-             <div className="absolute top-0 left-0 w-full h-full bg-white opacity-10" style={{backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '15px 15px'}}></div>
-             <h2 className="text-xl font-bold mb-2 relative z-10">{quiz.title}</h2>
-             <p className="text-xs opacity-90 relative z-10 whitespace-pre-wrap">{quiz.description}</p>
+    if (result) { 
+        return (
+          <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+              <SEO title={`${result.title} | 診断結果`} description={result.description.substring(0, 100)} />
+              <ResultView quiz={quiz} result={result} onRetry={() => {setResult(null); setCurrentStep(0); setAnswers({});}} onBack={onBack} />
+          </div>
+        ); 
+    }
+    
+    const question = playableQuestions[currentStep];
+    const progress = Math.round(((currentStep)/playableQuestions.length)*100);
+  
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-6 font-sans">
+        <SEO title={`${quiz.title} | 診断中`} description={quiz.description} />
+        <div className="w-full max-w-md mb-4 px-4">
+            <button onClick={onBack} className="text-gray-500 font-bold flex items-center gap-1 hover:text-gray-800"><ArrowLeft size={16}/> 戻る</button>
         </div>
-
-        <div className="bg-white rounded-b-3xl shadow-xl p-8 border border-gray-100 border-t-0 mb-8 animate-slide-up">
-            <div className="mb-4 flex justify-between text-xs font-bold text-gray-400">
-                <span>Q{currentStep+1} / {questions.length}</span>
-                <span>{progress}%</span>
-            </div>
-            <div className="h-2 bg-gray-100 rounded-full mb-8 overflow-hidden">
-                <div className={`${quiz.color || 'bg-indigo-600'} h-full transition-all duration-300 ease-out`} style={{width:`${((currentStep+1)/questions.length)*100}%`}}></div>
-            </div>
-
-            <h3 className="text-lg font-bold text-gray-900 mb-8 text-center leading-relaxed">{question.text}</h3>
-            <div className="space-y-4">
-                {question.options.map((opt, idx) => (
-                    <button key={idx} onClick={() => handleAnswer(opt)} className="w-full p-4 text-left border-2 border-gray-100 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 text-gray-800 font-bold transition-all flex justify-between items-center group active:scale-95">
-                        <span className="flex-grow">{opt.label}</span>
-                        <div className="w-5 h-5 rounded-full border-2 border-gray-300 group-hover:border-indigo-500 flex-shrink-0 ml-4"></div>
-                    </button>
-                ))}
-            </div>
+        <div className="max-w-md mx-auto w-full px-4">
+          {/* Colorful Header */}
+          <div className={`${quiz.color || 'bg-indigo-600'} text-white rounded-t-3xl p-6 text-center shadow-lg transition-colors duration-500 relative overflow-hidden`}>
+               <div className="absolute top-0 left-0 w-full h-full bg-white opacity-10" style={{backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '15px 15px'}}></div>
+               <h2 className="text-xl font-bold mb-2 relative z-10">{quiz.title}</h2>
+               <p className="text-xs opacity-90 relative z-10 whitespace-pre-wrap">{quiz.description}</p>
+          </div>
+  
+          <div className="bg-white rounded-b-3xl shadow-xl p-8 border border-gray-100 border-t-0 mb-8 animate-slide-up">
+              <div className="mb-4 flex justify-between text-xs font-bold text-gray-400">
+                  <span>Q{currentStep+1} / {playableQuestions.length}</span>
+                  <span>{progress}%</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full mb-8 overflow-hidden">
+                  <div className={`${quiz.color || 'bg-indigo-600'} h-full transition-all duration-300 ease-out`} style={{width:`${((currentStep+1)/playableQuestions.length)*100}%`}}></div>
+              </div>
+  
+              <h3 className="text-lg font-bold text-gray-900 mb-8 text-center leading-relaxed">{question.text}</h3>
+              <div className="space-y-4">
+                  {question.options.map((opt, idx) => (
+                      <button key={idx} onClick={() => handleAnswer(opt)} className="w-full p-4 text-left border-2 border-gray-100 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 text-gray-800 font-bold transition-all flex justify-between items-center group active:scale-95">
+                          <span className="flex-grow">{opt.label}</span>
+                          <div className="w-5 h-5 rounded-full border-2 border-gray-300 group-hover:border-indigo-500 flex-shrink-0 ml-4"></div>
+                      </button>
+                  ))}
+              </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
   const [activeTab, setActiveTab] = useState('基本設定');
