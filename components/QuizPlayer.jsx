@@ -1,17 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Loader2, Sparkles, Trophy, ExternalLink, MessageCircle, QrCode, RefreshCw, Home, Twitter, Share2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Trophy, ExternalLink, MessageCircle, QrCode, RefreshCw, Home, Twitter, Share2, CheckCircle, XCircle } from 'lucide-react';
 import SEO from './SEO';
-import { supabase } from '@/lib/supabase';
-import { calculateResult } from '@/lib/utils';
+import { supabase } from '../lib/supabase';
+import { calculateResult } from '../lib/utils';
+import confetti from 'canvas-confetti'; // 紙吹雪用
 
+// --- Result View (共通) ---
 const ResultView = ({ quiz, result, onRetry, onBack }) => {
-  useEffect(() => { document.title = `${result.title} | 診断結果`; }, [result.title]);
+  useEffect(() => { 
+      document.title = `${result.title} | 結果発表`;
+      // 教育モードかつ高得点(8割以上)なら紙吹雪！
+      if (quiz.mode === 'test' && result.score / result.total >= 0.8) {
+          fireConfetti();
+      }
+  }, []);
+
+  const fireConfetti = () => {
+      const duration = 3000;
+      const end = Date.now() + duration;
+      (function frame() {
+        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
+        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      }());
+  };
+
   const handleLinkClick = async () => {
     if(supabase) await supabase.rpc('increment_clicks', { row_id: quiz.id });
   };
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}?id=${quiz.slug || quiz.id}` : '';
-  const shareText = `${quiz.title} | 診断結果は「${result.title}」でした！ #診断クイズメーカー`;
+  const shareText = `${quiz.title} | 結果は「${result.title}」でした！ #診断クイズメーカー`;
   
   const handleShareX = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
   const handleShareLine = () => window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`, '_blank');
@@ -21,7 +40,15 @@ const ResultView = ({ quiz, result, onRetry, onBack }) => {
         <div className={`${quiz.color || 'bg-indigo-600'} text-white p-10 text-center relative overflow-hidden transition-colors duration-500`}>
             {quiz.image_url && <img src={quiz.image_url} className="absolute inset-0 w-full h-full object-cover opacity-20"/>}
             <div className="absolute top-0 left-0 w-full h-full bg-white opacity-10" style={{backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
-            <Trophy className="mx-auto mb-4 text-yellow-300 relative z-10" size={56} />
+            <Trophy className="mx-auto mb-4 text-yellow-300 relative z-10 animate-bounce" size={56} />
+            
+            {/* テストモードなら点数表示 */}
+            {quiz.mode === 'test' && (
+                <div className="relative z-10 mb-2 text-2xl font-bold bg-white/20 inline-block px-4 py-1 rounded-full">
+                    {result.score} / {result.total} 問正解
+                </div>
+            )}
+            
             <h2 className="text-3xl font-extrabold mt-2 relative z-10">{result.title}</h2>
         </div>
         <div className="p-8 md:p-10 flex-grow">
@@ -29,6 +56,7 @@ const ResultView = ({ quiz, result, onRetry, onBack }) => {
                 {result.description}
             </div>
             
+            {/* SNS Share */}
             <div className="bg-gray-50 p-4 rounded-xl mb-8 text-center border border-gray-100">
                 <p className="text-xs font-bold text-gray-500 mb-3">結果をシェアする</p>
                 <div className="flex justify-center gap-3">
@@ -74,14 +102,18 @@ const ResultView = ({ quiz, result, onRetry, onBack }) => {
   );
 };
 
+// --- Player Logic ---
 const QuizPlayer = ({ quiz, onBack }) => {
-  useEffect(() => { document.title = `${quiz.title} | 診断中`; }, [quiz.title]);
+  useEffect(() => { document.title = `${quiz.title} | 実施中`; }, [quiz.title]);
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [playableQuestions, setPlayableQuestions] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  // テストモード用のフィードバック状態
+  const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect' | null
+  
   const messagesEndRef = useRef(null);
   
   useEffect(() => {
@@ -101,7 +133,7 @@ const QuizPlayer = ({ quiz, onBack }) => {
 
   useEffect(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatHistory, isTyping, currentStep]);
+  }, [chatHistory, isTyping, currentStep, feedback]);
 
   useEffect(() => {
       if (playableQuestions && currentStep === 0 && chatHistory.length === 0 && quiz.layout === 'chat') {
@@ -115,36 +147,58 @@ const QuizPlayer = ({ quiz, onBack }) => {
 
   const results = typeof quiz.results === 'string' ? JSON.parse(quiz.results) : quiz.results;
 
+  const proceedToNext = (newAnswers) => {
+      setFeedback(null); // フィードバックを消す
+      if (currentStep + 1 < playableQuestions.length) {
+          if (quiz.layout === 'chat') {
+              setIsTyping(true);
+              setTimeout(() => {
+                  setIsTyping(false);
+                  setChatHistory(prev => [...prev, { type: 'bot', text: playableQuestions[currentStep + 1].text, qNum: currentStep + 2 }]);
+                  setCurrentStep(currentStep + 1);
+              }, 1000);
+          } else {
+              setCurrentStep(currentStep + 1);
+          }
+      } else {
+          if (quiz.layout === 'chat') {
+              setIsTyping(true);
+              setTimeout(() => {
+                  setIsTyping(false);
+                  setChatHistory(prev => [...prev, { type: 'bot', text: "お疲れ様でした！\n結果を集計しています..." }]);
+                  setTimeout(() => {
+                      setResult(calculateResult(newAnswers, results, quiz.mode));
+                  }, 2000);
+              }, 1500);
+          } else {
+              setResult(calculateResult(newAnswers, results, quiz.mode));
+          }
+      }
+  };
+
   const handleAnswer = (option) => {
+    // 既に回答済みなら何もしない（連打防止）
+    if (feedback) return;
+
     const newAnswers = { ...answers, [currentStep]: option };
     setAnswers(newAnswers);
 
     if (quiz.layout === 'chat') {
         setChatHistory(prev => [...prev, { type: 'user', text: option.label }]);
+    }
+
+    // 教育モードなら正誤判定を表示
+    if (quiz.mode === 'test') {
+        const isCorrect = option.score && option.score.A === 1;
+        setFeedback(isCorrect ? 'correct' : 'incorrect');
         
-        if (currentStep + 1 < playableQuestions.length) {
-            setIsTyping(true);
-            setTimeout(() => {
-                setIsTyping(false);
-                setChatHistory(prev => [...prev, { type: 'bot', text: playableQuestions[currentStep + 1].text, qNum: currentStep + 2 }]);
-                setCurrentStep(currentStep + 1);
-            }, 1000);
-        } else {
-            setIsTyping(true);
-            setTimeout(() => {
-                setIsTyping(false);
-                setChatHistory(prev => [...prev, { type: 'bot', text: "診断ありがとうございます！\n結果を作成しています..." }]);
-                setTimeout(() => {
-                    setResult(calculateResult(newAnswers, results));
-                }, 2000);
-            }, 1500);
-        }
+        // 1.5秒後に次へ
+        setTimeout(() => {
+            proceedToNext(newAnswers);
+        }, 1500);
     } else {
-        if (currentStep + 1 < playableQuestions.length) { 
-            setCurrentStep(currentStep + 1); 
-        } else { 
-            setResult(calculateResult(newAnswers, results)); 
-        }
+        // 通常モードはすぐ次へ（チャットの場合は遅延あり）
+        proceedToNext(newAnswers);
     }
   };
 
@@ -153,7 +207,7 @@ const QuizPlayer = ({ quiz, onBack }) => {
   if (result) { 
       return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-            <SEO title={`${result.title} | 診断結果`} description={result.description.substring(0, 100)} image={quiz.image_url} />
+            <SEO title={`${result.title} | 結果`} description={result.description.substring(0, 100)} image={quiz.image_url} />
             <ResultView quiz={quiz} result={result} onRetry={() => {setResult(null); setCurrentStep(0); setAnswers({}); setChatHistory([]);}} onBack={onBack} />
         </div>
       ); 
@@ -162,15 +216,38 @@ const QuizPlayer = ({ quiz, onBack }) => {
   const question = playableQuestions[currentStep];
   const progress = Math.round(((currentStep)/playableQuestions.length)*100);
 
-  // Chat Mode
+  // --- Feedback Overlay (For Test Mode) ---
+  const FeedbackOverlay = () => {
+      if (!feedback) return null;
+      return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
+              <div className={`bg-white p-8 rounded-3xl shadow-2xl transform scale-110 flex flex-col items-center animate-bounce-quick ${feedback==='correct' ? 'border-4 border-green-500' : 'border-4 border-red-500'}`}>
+                  {feedback === 'correct' ? (
+                      <>
+                          <CheckCircle size={80} className="text-green-500 mb-4"/>
+                          <h2 className="text-3xl font-extrabold text-green-600">正解！</h2>
+                      </>
+                  ) : (
+                      <>
+                          <XCircle size={80} className="text-red-500 mb-4"/>
+                          <h2 className="text-3xl font-extrabold text-red-600">残念...</h2>
+                      </>
+                  )}
+              </div>
+          </div>
+      );
+  };
+
+  // --- Render: Chat Mode ---
   if (quiz.layout === 'chat') {
       return (
         <div className="min-h-screen bg-gray-200 flex items-center justify-center font-sans">
+            <FeedbackOverlay />
             <div className="w-full max-w-md bg-[#f0f0f0] h-[100dvh] flex flex-col relative shadow-2xl overflow-hidden">
                 <div className="bg-gradient-to-br from-[#00B900] to-[#00C851] p-4 text-white text-center relative shadow-sm z-10 shrink-0">
                     <div className="text-xs opacity-90 absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer" onClick={onBack}><ArrowLeft size={20}/></div>
                     <h1 className="font-bold text-sm">{quiz.title}</h1>
-                    <div className="text-[10px] opacity-80">オンライン</div>
+                    <div className="text-[10px] opacity-80">{quiz.mode === 'test' ? '検定中' : 'オンライン'}</div>
                     <div className="bg-white/30 h-1 mt-2 rounded-full overflow-hidden w-1/2 mx-auto">
                         <div className="h-full bg-white transition-all duration-500" style={{width: `${progress}%`}}></div>
                     </div>
@@ -208,7 +285,7 @@ const QuizPlayer = ({ quiz, onBack }) => {
 
                 <div className="absolute bottom-0 left-0 w-full bg-white border-t p-4 z-20 pb-8 safe-area-bottom shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
                     <div className="max-w-md mx-auto space-y-2">
-                        {(!isTyping && (chatHistory.length === 0 || chatHistory[chatHistory.length-1].type === 'bot')) && (
+                        {(!isTyping && !feedback && (chatHistory.length === 0 || chatHistory[chatHistory.length-1].type === 'bot')) && (
                             question.options.map((opt, idx) => (
                                 <button key={idx} onClick={() => handleAnswer(opt)} 
                                     className="w-full bg-white border-2 border-[#00B900] text-[#00B900] hover:bg-[#00B900] hover:text-white font-bold py-3 rounded-full transition-all active:scale-95 shadow-sm text-sm">
@@ -226,6 +303,7 @@ const QuizPlayer = ({ quiz, onBack }) => {
   // Card Mode (Existing)
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-6 font-sans">
+      <FeedbackOverlay />
       <SEO title={`${quiz.title} | 診断中`} description={quiz.description} image={quiz.image_url} />
       <div className="w-full max-w-md mb-4 px-4">
           <button onClick={onBack} className="text-gray-500 font-bold flex items-center gap-1 hover:text-gray-800"><ArrowLeft size={16}/> 戻る</button>
@@ -262,12 +340,13 @@ const QuizPlayer = ({ quiz, onBack }) => {
 
             <h3 className="text-lg font-bold text-gray-900 mb-8 text-center leading-relaxed">{question.text}</h3>
             <div className="space-y-4">
-                {question.options.map((opt, idx) => (
+                {!feedback && question.options.map((opt, idx) => (
                     <button key={idx} onClick={() => handleAnswer(opt)} className="w-full p-4 text-left border-2 border-gray-100 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 text-gray-800 font-bold transition-all flex justify-between items-center group active:scale-95">
                         <span className="flex-grow">{opt.label}</span>
                         <div className="w-5 h-5 rounded-full border-2 border-gray-300 group-hover:border-indigo-500 flex-shrink-0 ml-4"></div>
                     </button>
                 ))}
+                {feedback && <div className="text-center text-gray-400 text-sm py-4">判定中...</div>}
             </div>
         </div>
       </div>
