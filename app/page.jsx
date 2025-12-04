@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Script from 'next/script';
-import { supabase } from '@/lib/supabase';
-import { generateSlug } from '@/lib/utils';
-import { ADMIN_EMAIL } from '@/lib/constants';
+import { supabase } from '../lib/supabase';
+import { generateSlug } from '../lib/utils';
+// ★修正: constants.js から読み込むように変更
+import { ADMIN_EMAIL } from '../lib/constants';
 
 import AuthModal from '../components/AuthModal';
 import Portal from '../components/Portal';
@@ -37,7 +38,9 @@ const App = () => {
           const params = new URLSearchParams(window.location.search);
           const id = params.get('id');
           if(id && supabase) {
+              // slug(文字列)で検索
               let { data } = await supabase.from('quizzes').select('*').eq('slug', id).single();
+              // なければID(数値)で検索
               if (!data && !isNaN(id)) {
                  const res = await supabase.from('quizzes').select('*').eq('id', id).single();
                  data = res.data;
@@ -86,13 +89,21 @@ const App = () => {
       if(!supabase) return;
       try {
           const payload = {
-              title: form.title, description: form.description, category: form.category, color: form.color,
-              questions: form.questions, results: form.results, 
+              title: form.title, 
+              description: form.description, 
+              category: form.category, 
+              color: form.color,
+              questions: form.questions, 
+              results: form.results, 
               user_id: user?.id || null,
               layout: form.layout || 'card',
-              image_url: form.image_url || null
+              image_url: form.image_url || null,
+              mode: form.mode || 'diagnosis'
           };
-          if (!id && !form.slug) { payload.slug = generateSlug(); }
+          
+          if (!id && !form.slug) { 
+              payload.slug = generateSlug(); 
+          }
 
           let result;
           if (id) {
@@ -100,11 +111,15 @@ const App = () => {
           } else {
              result = await supabase.from('quizzes').insert([payload]).select();
           }
+          
           if(result.error) throw result.error;
           if(!result.data || result.data.length === 0) throw new Error("更新できませんでした。");
+          
           alert('保存しました！');
           await fetchQuizzes();
-          return result.data[0].id;
+          
+          return result.data[0].slug || result.data[0].id;
+          
       } catch(e) { 
           alert('保存エラー: ' + e.message); 
       }
