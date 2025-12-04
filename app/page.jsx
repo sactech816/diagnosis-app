@@ -12,7 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import Script from 'next/script';
 
 // --- 設定エリア ---
-const ADMIN_EMAIL = "admin@example.com"; 
+const ADMIN_EMAIL = "info@kei-sho.co.jp"; 
 // ----------------
 
 // --- Supabase Config ---
