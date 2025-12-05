@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Sparkles, Crown, User, LayoutDashboard, TrendingUp, Menu, X, LogOut, HelpCircle, FileText } from 'lucide-react';
+import { Sparkles, User, LayoutDashboard, TrendingUp, Menu, X, LogOut, HelpCircle, FileText, Lightbulb } from 'lucide-react';
 
-const Header = ({ setPage, isAdmin, user, onLogout, setShowAuth }) => {
+const Header = ({ setPage, user, onLogout, setShowAuth }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleNav = (page) => {
@@ -19,6 +19,7 @@ const Header = ({ setPage, isAdmin, user, onLogout, setShowAuth }) => {
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex items-center gap-4 text-sm font-bold text-gray-600">
+                    <button onClick={()=>handleNav('logic')} className="hover:text-orange-500 flex items-center gap-1"><Lightbulb size={16}/> 作り方のコツ</button>
                     <button onClick={()=>handleNav('effective')} className="hover:text-indigo-600 flex items-center gap-1"><TrendingUp size={16}/> 活用法</button>
                     <button onClick={()=>handleNav('faq')} className="hover:text-indigo-600">よくある質問</button>
                     {user ? (
@@ -33,7 +34,7 @@ const Header = ({ setPage, isAdmin, user, onLogout, setShowAuth }) => {
                 </div>
 
                 {/* Mobile Menu Button */}
-                <button className="md:hidden text-gray-600" onClick={()=>setIsMenuOpen(!isMenuOpen)}>
+                <button className="md:hidden text-gray-600 p-2" onClick={()=>setIsMenuOpen(!isMenuOpen)}>
                     {isMenuOpen ? <X size={28}/> : <Menu size={28}/>}
                 </button>
             </div>
@@ -41,6 +42,7 @@ const Header = ({ setPage, isAdmin, user, onLogout, setShowAuth }) => {
             {/* Mobile Menu Overlay */}
             {isMenuOpen && (
                 <div className="md:hidden bg-white border-t absolute w-full left-0 top-16 shadow-xl py-4 px-6 flex flex-col gap-4 animate-fade-in z-50">
+                    <button onClick={()=>handleNav('logic')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-orange-600 font-bold"><Lightbulb size={20}/> 売れる診断の作り方</button>
                     <button onClick={()=>handleNav('effective')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-gray-700 font-bold"><TrendingUp size={20}/> 効果的な活用法</button>
                     <button onClick={()=>handleNav('howto')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-gray-700 font-bold"><FileText size={20}/> 作り方・規約</button>
                     <button onClick={()=>handleNav('faq')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-gray-700 font-bold"><HelpCircle size={20}/> よくある質問</button>
