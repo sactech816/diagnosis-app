@@ -3,7 +3,12 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+// ★修正: 管理者権限（Service Role）でSupabaseを操作する
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY // ここが変わりました
+);
 
 export async function POST(req) {
   try {
@@ -15,8 +20,8 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Not paid' }, { status: 400 });
     }
 
-    // 2. Supabaseに購入履歴を記録
-    const { data, error } = await supabase.from('purchases').insert([
+    // 2. Supabaseに購入履歴を記録（管理者権限で実行）
+    const { data, error } = await supabaseAdmin.from('purchases').insert([
       {
         user_id: userId,
         quiz_id: quizId,
@@ -25,11 +30,14 @@ export async function POST(req) {
       }
     ]);
 
-    if (error) throw error;
+    if (error) {
+        console.error("Supabase Insert Error:", error);
+        throw error;
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error("Verify API Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
