@@ -54,32 +54,49 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       results: [ {type:"A", title:"結果A", description:"説明...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}, {type:"B", title:"結果B", description:"...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}, {type:"C", title:"結果C", description:"...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""} ]
   };
 
-  const [form, setForm] = useState(initialData || defaultForm);
+  // ★修正: データの欠損を防ぐ初期化ロジック
+  const [form, setForm] = useState(() => {
+      if (!initialData) return defaultForm;
+      
+      // 既存データ(initialData)に、新機能用のフィールド(link_url等)が無くてもエラーにならないよう補完
+      return {
+          ...defaultForm, // デフォルト値を下敷きにする
+          ...initialData, // DBからの値を上書きする
+          // 特に結果(results)の中身を1つずつチェックして補完
+          results: initialData.results?.map(r => ({
+              link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: "", // デフォルト値
+              ...r // DBの値があれば上書き
+          })) || defaultForm.results
+      };
+  });
 
   const switchMode = (newMode) => {
       let newResults = form.results;
       let newCategory = "Business";
 
+      // テンプレート定義
+      const templateResult = { link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" };
+
       if (newMode === 'test') {
           newCategory = "Education";
           newResults = [
-              { type: "A", title: "満点！天才！", description: "全問正解です。素晴らしい！", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
-              { type: "B", title: "あと少し！", description: "惜しい、もう少しで満点です。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
-              { type: "C", title: "頑張ろう", description: "復習して再挑戦しましょう。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" }
+              { type: "A", title: "満点！天才！", description: "全問正解です。素晴らしい！", ...templateResult },
+              { type: "B", title: "あと少し！", description: "惜しい、もう少しで満点です。", ...templateResult },
+              { type: "C", title: "頑張ろう", description: "復習して再挑戦しましょう。", ...templateResult }
           ];
       } else if (newMode === 'fortune') {
           newCategory = "Fortune";
           newResults = [
-              { type: "A", title: "大吉", description: "最高の運勢です！", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
-              { type: "B", title: "中吉", description: "良いことがあるかも。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
-              { type: "C", title: "吉", description: "平凡こそ幸せ。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" }
+              { type: "A", title: "大吉", description: "最高の運勢です！", ...templateResult },
+              { type: "B", title: "中吉", description: "良いことがあるかも。", ...templateResult },
+              { type: "C", title: "吉", description: "平凡こそ幸せ。", ...templateResult }
           ];
       } else {
           newCategory = "Business";
           newResults = [
-              { type: "A", title: "結果A", description: "説明...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
-              { type: "B", title: "結果B", description: "...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
-              { type: "C", title: "結果C", description: "...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" }
+              { type: "A", title: "結果A", description: "説明...", ...templateResult },
+              { type: "B", title: "結果B", description: "...", ...templateResult },
+              { type: "C", title: "結果C", description: "...", ...templateResult }
           ];
       }
       setForm({ ...form, mode: newMode, category: newCategory, results: newResults });
@@ -123,9 +140,10 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
   const addResult = () => {
       if(form.results.length >= 10) return alert('結果パターンは最大10個までです');
       const nextType = String.fromCharCode(65 + form.results.length);
+      const templateResult = { link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" };
       setForm({
           ...form,
-          results: [...form.results, {type: nextType, title:`結果${nextType}`, description:"...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}]
+          results: [...form.results, {type: nextType, title:`結果${nextType}`, description:"...", ...templateResult}]
       });
   };
 
@@ -185,7 +203,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       try {
           let prompt = "";
           if (form.mode === 'test') {
-              prompt = `テーマ「${aiTheme}」の4択学習クイズを作成して。質問5つ。各質問で正解は1つだけ（scoreのAを1、他を0にする）。結果は高・中・低得点の3段階。`;
+              prompt = `テーマ「${aiTheme}」の4択学習クイズを作成して。質問5つ。各質問で正解は1つだけ（scoreのAを1、他を0にする）。結果は高得点・中得点・低得点の3段階。`;
           } else if (form.mode === 'fortune') {
               prompt = `テーマ「${aiTheme}」の占いを作成して。質問5つ（運勢には影響しない演出用）。結果は大吉・中吉・吉などの3パターン。`;
           } else {
@@ -202,9 +220,10 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
           const content = data.choices[0].message.content;
           const jsonStr = content.substring(content.indexOf('{'), content.lastIndexOf('}') + 1);
           const json = JSON.parse(jsonStr);
+          // AI生成データに既存フィールドをマージ
           setForm(prev => ({ 
               ...prev, ...json,
-              results: json.results.map(r => ({...r, link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}))
+              results: json.results.map(r => ({link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"", ...r}))
           })); 
           alert('AI生成が完了しました！');
       } catch(e) { alert('AI生成エラー: ' + e.message); } finally { setIsGenerating(false); }
@@ -258,7 +277,6 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
         </div>
         
         <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
-            {/* Sidebar */}
             <div className="bg-white border-b md:border-b-0 md:border-r flex flex-col w-full md:w-64 shrink-0">
                 <div className="p-4 bg-gradient-to-b from-purple-50 to-white border-b">
                     <div className="flex items-center gap-2 mb-2 text-purple-700 font-bold text-sm">
@@ -283,14 +301,12 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                         </button>
                     ))}
                     
-                    {/* ★修正: リンク位置をここに移動 */}
                     <button onClick={()=>setPage('howto')} className="flex-shrink-0 w-full px-4 py-3 text-left text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-2 border-t mt-2 pt-4">
                         <BookOpen size={14}/> 使い方・規約を見る
                     </button>
                 </div>
             </div>
 
-            {/* Main Content */}
             <div className="flex-grow p-4 md:p-8 overflow-y-auto bg-gray-50">
                 <div className="max-w-3xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-gray-100 min-h-[500px]">
                     {activeTab === '基本設定' && (
@@ -348,12 +364,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                             <div className="mt-6 mb-6">
                                 <label className="text-sm font-bold text-gray-900 block mb-2">メイン画像</label>
                                 <div className="flex flex-col md:flex-row gap-2">
-                                    <input 
-                                        className="flex-grow border border-gray-300 p-3 rounded-lg text-black font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white placeholder-gray-400" 
-                                        value={form.image_url||''} 
-                                        onChange={e=>setForm({...form, image_url:e.target.value})} 
-                                        placeholder="画像URL (https://...) またはアップロード"
-                                    />
+                                    <input className="flex-grow border border-gray-300 p-3 rounded-lg text-black font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white placeholder-gray-400" value={form.image_url||''} onChange={e=>setForm({...form, image_url:e.target.value})} placeholder="画像URL (https://...) またはアップロード"/>
                                     <label className="bg-indigo-50 text-indigo-700 px-4 py-3 rounded-lg font-bold hover:bg-indigo-100 flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap">
                                         {isUploading ? <Loader2 className="animate-spin" size={16}/> : <UploadCloud size={16}/>}
                                         <span>アップロード</span>

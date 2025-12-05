@@ -1,149 +1,171 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Edit3, Trash2, ThumbsUp, ExternalLink, Mail, Lock, Loader2, Briefcase, GraduationCap, Sparkles as SparklesIcon, LayoutGrid } from 'lucide-react';
-import Header from './Header';
-import SEO from './SEO';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
+import { 
+    Search, Zap, TrendingUp, MessageCircle, 
+    Sparkles, ArrowRight, Play, CheckCircle 
+} from 'lucide-react';
+import Header from './Header'; 
 
-const Portal = ({ quizzes, isLoading, onPlay, onCreate, user, setShowAuth, onLogout, setPage, onEdit, onDelete, isAdmin }) => {
-  useEffect(() => { document.title = "無料AI診断メーカー | 集客・販促に効くクイズ作成ツール"; }, []);
-  const [filterMode, setFilterMode] = useState('all'); // all, diagnosis, test, fortune
-  const [sortType, setSortType] = useState('new'); // new, popular
+const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCreate, setPage, isAdmin }) => {
+    
+    // カテゴリフィルタリング用
+    const [filter, setFilter] = useState('All');
+    const filteredQuizzes = filter === 'All' ? quizzes : quizzes.filter(q => q.category === filter);
 
-  const handleLike = async (e, quiz) => {
-      e.stopPropagation();
-      if(!supabase) return;
-      const btn = e.currentTarget;
-      const countSpan = btn.querySelector('span');
-      if(btn.classList.contains('liked')) return;
-      try {
-        await supabase.rpc('increment_likes', { row_id: quiz.id });
-        const current = parseInt(countSpan.textContent || '0');
-        countSpan.textContent = current + 1;
-        btn.classList.add('liked', 'text-pink-500');
-      } catch(err) { console.error(err); }
-  };
+    return (
+        <div className="min-h-screen bg-white font-sans flex flex-col">
+            {/* ヘッダー */}
+            <Header setPage={setPage} user={user} onLogout={onLogout} setShowAuth={setShowAuth} isAdmin={isAdmin} />
 
-  // 1. まずモード（タブ）で絞り込み
-  const filteredQuizzes = quizzes.filter(q => {
-      if (filterMode === 'all') return true;
-      // 互換性のため null/undefined は diagnosis (ビジネス) 扱い
-      const mode = q.mode || 'diagnosis';
-      return mode === filterMode;
-  });
-
-  // 2. 次にソート（新着 or 人気）
-  const displayedQuizzes = [...filteredQuizzes].sort((a, b) => {
-      if (sortType === 'popular') return (b.likes_count || 0) - (a.likes_count || 0);
-      // new
-      return new Date(b.created_at) - new Date(a.created_at);
-  });
-
-  return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-20">
-      <SEO title="無料AI診断メーカー | 集客・教育・占いのクイズ作成" description="ビジネス診断、学習テスト、占いコンテンツをAIが自動生成。登録不要、無料で今すぐ作成できます。" />
-      <Header setPage={setPage} user={user} onLogout={onLogout} setShowAuth={setShowAuth} isAdmin={isAdmin} />
-      
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-indigo-900 to-blue-800 text-white py-16 px-6 text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-        <h1 className="text-3xl md:text-5xl font-extrabold mb-6 relative z-10 leading-tight">
-            あらゆる<span className="text-yellow-300">「診断・検定・占い」</span>を<br/>AIで一瞬にして作成
-        </h1>
-        <p className="text-blue-100 mb-8 max-w-xl mx-auto relative z-10">
-            集客・教育・エンタメ。目的を選んで、あとはAIにおまかせ。<br/>
-            LINE連携やSNSシェアに最適なコンテンツが無料で手に入ります。
-        </p>
-        <button onClick={onCreate} className="bg-white text-indigo-900 px-8 py-4 rounded-full font-bold shadow-xl hover:bg-gray-100 hover:scale-105 transition-all flex items-center gap-2 mx-auto relative z-10">
-            <Edit3 size={20} /> 無料で作成する
-        </button>
-      </div>
-
-      {/* Filter & Sort Controls */}
-      <div className="max-w-6xl mx-auto px-6 mt-12 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-gray-200 pb-4">
-          <div className="flex flex-wrap justify-center gap-2">
-              <button onClick={()=>setFilterMode('all')} className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors ${filterMode==='all' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}>
-                  <LayoutGrid size={16}/> すべて
-              </button>
-              <button onClick={()=>setFilterMode('diagnosis')} className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors ${filterMode==='diagnosis' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}>
-                  <Briefcase size={16}/> ビジネス
-              </button>
-              <button onClick={()=>setFilterMode('test')} className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors ${filterMode==='test' ? 'bg-orange-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}>
-                  <GraduationCap size={16}/> 学習・検定
-              </button>
-              <button onClick={()=>setFilterMode('fortune')} className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors ${filterMode==='fortune' ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}>
-                  <SparklesIcon size={16}/> 占い
-              </button>
-          </div>
-
-          <div className="flex gap-2 text-sm font-bold bg-gray-100 p-1 rounded-lg">
-              <button onClick={()=>setSortType('new')} className={`px-3 py-1.5 rounded-md transition-all ${sortType==='new' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>新着順</button>
-              <button onClick={()=>setSortType('popular')} className={`px-3 py-1.5 rounded-md transition-all ${sortType==='popular' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>人気順</button>
-          </div>
-      </div>
-
-      {/* List */}
-      <div id="quiz-list" className="max-w-6xl mx-auto px-6 py-8">
-        {isLoading ? (
-            <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-indigo-600" size={40}/></div>
-        ) : (
-         <div className="grid md:grid-cols-3 gap-8">
-            {displayedQuizzes.length === 0 ? (
-                <div className="col-span-3 text-center py-12 bg-gray-50 rounded-xl text-gray-400">
-                    <p>まだコンテンツがありません。</p>
-                    <button onClick={onCreate} className="mt-4 text-indigo-600 font-bold hover:underline">最初のひとつを作成する</button>
+            <div className="flex-grow">
+                {/* ヒーローセクション */}
+                <div className="bg-gradient-to-br from-indigo-900 via-purple-800 to-indigo-900 text-white pt-20 pb-24 px-4 relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
+                    <div className="max-w-4xl mx-auto text-center relative z-10">
+                        <div className="inline-block bg-indigo-500/30 border border-indigo-400/30 px-4 py-1 rounded-full text-xs font-bold mb-6 animate-fade-in-up">
+                            ✨ AIがあなたの診断ビジネスを加速させる
+                        </div>
+                        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight drop-shadow-lg">
+                            診断クイズで、<br/>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-yellow-200">集客をもっと楽しく。</span>
+                        </h1>
+                        <p className="text-lg md:text-xl text-indigo-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+                            専門知識は不要。AIがあなたの代わりに高品質な診断・検定・占いを作成。<br/>
+                            SNSで拡散し、自然な流れでファンを増やしましょう。
+                        </p>
+                        <div className="flex flex-col md:flex-row justify-center gap-4">
+                            <button onClick={onCreate} className="bg-white text-indigo-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2 transform hover:scale-105">
+                                <Sparkles size={20} className="text-yellow-500"/> 今すぐ診断を作る
+                            </button>
+                            <button onClick={()=>setPage('effective')} className="bg-indigo-700/50 border border-indigo-400/50 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-indigo-700/80 transition-all flex items-center justify-center gap-2">
+                                <TrendingUp size={20}/> 活用事例を見る
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            ) : (
-                displayedQuizzes.map((quiz) => (
-                <div key={quiz.id} onClick={()=>onPlay(quiz)} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col h-full group overflow-hidden border border-gray-100 relative">
-                    {/* Admin Menu */}
-                    {isAdmin && (
-                        <div className="absolute top-2 right-2 z-20 flex gap-1">
-                            <button onClick={(e)=>{e.stopPropagation(); onEdit(quiz);}} className="bg-white/90 p-2 rounded-full shadow hover:text-blue-600"><Edit3 size={16}/></button>
-                            <button onClick={(e)=>{e.stopPropagation(); onDelete(quiz.id);}} className="bg-white/90 p-2 rounded-full shadow hover:text-red-600"><Trash2 size={16}/></button>
+
+                {/* クイズ一覧セクション */}
+                <div className="max-w-6xl mx-auto py-16 px-4">
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 border-b border-gray-100 pb-4">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                <Zap className="text-yellow-500"/> 新着の診断クイズ
+                            </h2>
+                            <p className="text-gray-500 text-sm mt-1">作成されたばかりのコンテンツをチェックしましょう</p>
+                        </div>
+                        
+                        {/* タブ切り替え */}
+                        <div className="flex bg-gray-100 p-1 rounded-lg">
+                            {['All', 'Business', 'Education', 'Fortune'].map(cat => (
+                                <button 
+                                    key={cat}
+                                    onClick={()=>setFilter(cat)}
+                                    className={`px-4 py-2 rounded-md text-xs font-bold transition-all ${filter===cat ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    {cat === 'All' ? 'すべて' : cat === 'Business' ? 'ビジネス' : cat === 'Education' ? '学習・検定' : '占い'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {isLoading ? (
+                        <div className="grid md:grid-cols-3 gap-6 animate-pulse">
+                            {[1,2,3].map(i => <div key={i} className="h-64 bg-gray-200 rounded-2xl"></div>)}
+                        </div>
+                    ) : (
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {filteredQuizzes.length > 0 ? filteredQuizzes.map(quiz => (
+                                <div key={quiz.id} onClick={()=>onPlay(quiz)} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all cursor-pointer group overflow-hidden flex flex-col h-full transform hover:-translate-y-1">
+                                    <div className={`h-40 w-full relative overflow-hidden ${quiz.color || 'bg-indigo-600'}`}>
+                                        {quiz.image_url ? (
+                                            <img src={quiz.image_url} alt={quiz.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-30 text-white">
+                                                <Sparkles size={48}/>
+                                            </div>
+                                        )}
+                                        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                            {quiz.layout === 'chat' ? <MessageCircle size={10}/> : <Zap size={10}/>}
+                                            {quiz.layout === 'chat' ? 'CHAT' : 'CARD'}
+                                        </div>
+                                    </div>
+                                    <div className="p-6 flex flex-col flex-grow">
+                                        <div className="mb-2 flex items-center gap-2">
+                                            <span className={`text-[10px] font-bold px-2 py-1 rounded ${
+                                                quiz.mode === 'test' ? 'bg-orange-100 text-orange-600' : 
+                                                quiz.mode === 'fortune' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                                            }`}>
+                                                {quiz.mode === 'test' ? '検定' : quiz.mode === 'fortune' ? '占い' : '診断'}
+                                            </span>
+                                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                <Play size={10}/> {quiz.views_count||0}
+                                            </span>
+                                        </div>
+                                        <h3 className="font-bold text-gray-900 text-lg mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">{quiz.title}</h3>
+                                        <p className="text-gray-500 text-xs line-clamp-3 mb-4 leading-relaxed">{quiz.description}</p>
+                                        <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center text-xs font-bold text-indigo-600">
+                                            <span>診断する</span>
+                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="col-span-full text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                    <p className="text-gray-400 font-bold mb-4">まだクイズがありません</p>
+                                    <button onClick={onCreate} className="bg-indigo-600 text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-indigo-700">一番乗りで作る</button>
+                                </div>
+                            )}
                         </div>
                     )}
-                    {/* Thumbnail */}
-                    <div className={`h-40 w-full overflow-hidden relative ${quiz.color || 'bg-indigo-600'}`}>
-                        {quiz.image_url && <img src={quiz.image_url} alt={quiz.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>}
-                        <span className="absolute top-4 left-4 bg-white/90 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 text-gray-800">
-                            {quiz.mode === 'test' && <GraduationCap size={12}/>}
-                            {quiz.mode === 'fortune' && <SparklesIcon size={12}/>}
-                            {(!quiz.mode || quiz.mode === 'diagnosis') && <Briefcase size={12}/>}
-                            {quiz.category || 'その他'}
-                        </span>
+                </div>
+            </div>
+
+            {/* フッター */}
+            <footer className="bg-gray-900 text-gray-400 py-12 mt-12 border-t border-gray-800">
+                <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-4 gap-8">
+                    {/* カラム1: ロゴと説明 */}
+                    <div className="col-span-1 md:col-span-2">
+                        <h2 className="text-white font-bold text-xl mb-4 flex items-center gap-2">
+                            <Sparkles className="text-pink-500"/> 診断クイズメーカー
+                        </h2>
+                        <p className="text-sm leading-relaxed mb-6 opacity-80">
+                            集客・教育・エンタメに使える診断コンテンツを、<br/>
+                            AIの力で誰でも簡単に作成・公開できるプラットフォーム。<br/>
+                            あなたのビジネスを「診断」で加速させます。
+                        </p>
+                        <button onClick={onCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-full transition-colors">
+                            無料で作成をはじめる
+                        </button>
                     </div>
-                    {/* Content */}
-                    <div className="p-6 flex-grow flex flex-col">
-                        <h3 className="text-lg font-bold mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2 text-gray-900">{quiz.title}</h3>
-                        <p className="text-sm text-gray-600 line-clamp-3 flex-grow mb-4">{quiz.description}</p>
-                        <div className="flex items-center justify-between border-t pt-4 mt-auto">
-                            <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg flex items-center gap-1">
-                                <Play size={12}/> スタート
-                            </span>
-                            <div className="flex gap-3 text-gray-400 text-xs font-bold items-center">
-                                <span className="flex items-center gap-1"><Play size={12}/> {quiz.views_count||0}</span>
-                                <button onClick={(e)=>handleLike(e, quiz)} className="flex items-center gap-1 hover:text-pink-500 transition-colors group/like">
-                                    <ThumbsUp size={14} className="group-hover/like:scale-125 transition-transform"/>
-                                    <span>{quiz.likes_count || 0}</span>
-                                </button>
-                            </div>
-                        </div>
+
+                    {/* カラム2: メニュー */}
+                    <div>
+                        <h3 className="text-white font-bold mb-4 border-b border-gray-700 pb-2 inline-block">メニュー</h3>
+                        <ul className="space-y-3 text-sm">
+                            <li><button onClick={()=>setPage('effective')} className="hover:text-white transition-colors flex items-center gap-2">➤ 効果的な活用法</button></li>
+                            <li><button onClick={()=>setPage('logic')} className="hover:text-white transition-colors flex items-center gap-2">➤ 売れる診断の作り方</button></li>
+                            <li><button onClick={()=>setPage('howto')} className="hover:text-white transition-colors flex items-center gap-2">➤ 使い方・機能一覧</button></li>
+                            <li><button onClick={()=>setPage('dashboard')} className="hover:text-white transition-colors flex items-center gap-2">➤ マイページ</button></li>
+                        </ul>
+                    </div>
+
+                    {/* カラム3: サポート・規約 */}
+                    <div>
+                        <h3 className="text-white font-bold mb-4 border-b border-gray-700 pb-2 inline-block">サポート・規約</h3>
+                        <ul className="space-y-3 text-sm">
+                            <li><button onClick={()=>setPage('faq')} className="hover:text-white transition-colors">よくある質問</button></li>
+                            <li><button onClick={()=>setPage('contact')} className="hover:text-white transition-colors">お問い合わせ</button></li>
+                            <li><button onClick={()=>setPage('legal')} className="hover:text-white transition-colors">特定商取引法に基づく表記</button></li>
+                            <li><button onClick={()=>setPage('privacy')} className="hover:text-white transition-colors">プライバシーポリシー</button></li>
+                        </ul>
                     </div>
                 </div>
-                ))
-            )}
-         </div>
-        )}
-      </div>
-      <footer className="bg-white border-t py-12 text-center text-sm text-gray-400">
-          <div className="mb-6 flex justify-center gap-6">
-              <button onClick={()=>setPage('faq')} className="hover:text-indigo-600 font-bold">よくある質問</button>
-              <a href="https://docs.google.com/forms/d/e/1FAIpQLSd8euNVubqlITrCF2_W7VVBjLd2mVxzOIcJ67pNnk3GPLnT_A/viewform" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 font-bold flex items-center gap-1"><Mail size={14}/> お問い合わせ</a>
-          </div>
-          <p className="mb-4">&copy; 2025 Shindan Quiz Maker. All rights reserved.</p>
-      </footer>
-    </div>
-  );
+                
+                <div className="max-w-6xl mx-auto px-4 mt-12 pt-8 border-t border-gray-800 text-center text-xs opacity-60">
+                    &copy; 2025 Shindan Quiz Maker. All rights reserved.
+                </div>
+            </footer>
+        </div>
+    );
 };
 
 export default Portal;
