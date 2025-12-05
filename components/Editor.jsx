@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
     Edit3, MessageSquare, Trophy, Loader2, Save, Share2, 
     Sparkles, Wand2, BookOpen, Image as ImageIcon, 
-    Layout, MessageCircle, ArrowLeft, Briefcase, GraduationCap, CheckCircle, Shuffle, Plus, Trash2, X
+    Layout, MessageCircle, ArrowLeft, Briefcase, GraduationCap, 
+    CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode
 } from 'lucide-react';
 import { generateSlug } from '../lib/utils';
 
@@ -47,7 +48,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
   const defaultForm = {
       title: "新規クイズ", description: "説明文を入力...", category: "Business", color: "bg-indigo-600", layout: "card", image_url: "", mode: "diagnosis",
       questions: Array(5).fill(null).map((_,i)=>({text:`質問${i+1}を入力してください`, options: Array(4).fill(null).map((_,j)=>({label:`選択肢${j+1}`, score:{A:j===0?3:0, B:j===1?3:0, C:j===2?3:0}}))})),
-      results: [ {type:"A", title:"結果A", description:"説明..."}, {type:"B", title:"結果B", description:"..."}, {type:"C", title:"結果C", description:"..."} ]
+      results: [ {type:"A", title:"結果A", description:"説明...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}, {type:"B", title:"結果B", description:"...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}, {type:"C", title:"結果C", description:"...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""} ]
   };
 
   const [form, setForm] = useState(initialData || defaultForm);
@@ -59,16 +60,16 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       if (newMode === 'test') {
           newCategory = "Education";
           newResults = [
-              { type: "A", title: "満点！天才！", description: "全問正解です。素晴らしい！" },
-              { type: "B", title: "あと少し！", description: "惜しい、もう少しで満点です。" },
-              { type: "C", title: "頑張ろう", description: "復習して再挑戦しましょう。" }
+              { type: "A", title: "満点！天才！", description: "全問正解です。素晴らしい！", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
+              { type: "B", title: "あと少し！", description: "惜しい、もう少しで満点です。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
+              { type: "C", title: "頑張ろう", description: "復習して再挑戦しましょう。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" }
           ];
       } else if (newMode === 'fortune') {
           newCategory = "Fortune";
           newResults = [
-              { type: "A", title: "大吉", description: "最高の運勢です！" },
-              { type: "B", title: "中吉", description: "良いことがあるかも。" },
-              { type: "C", title: "吉", description: "平凡こそ幸せ。" }
+              { type: "A", title: "大吉", description: "最高の運勢です！", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
+              { type: "B", title: "中吉", description: "良いことがあるかも。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" },
+              { type: "C", title: "吉", description: "平凡こそ幸せ。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" }
           ];
       }
       setForm({ ...form, mode: newMode, category: newCategory, results: newResults });
@@ -81,7 +82,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       alert(`公開URLをコピーしました！\n${url}`); 
   };
 
-  // 質問・結果の追加・削除機能
+  // 質問・結果・選択肢の追加削除
   const addQuestion = () => {
       if(form.questions.length >= 10) return alert('質問は最大10個までです');
       setForm({
@@ -96,12 +97,26 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       setForm({...form, questions: newQuestions});
   };
 
+  const addOption = (qIndex) => {
+      const newQuestions = [...form.questions];
+      if(newQuestions[qIndex].options.length >= 6) return alert('選択肢は最大6つまでです');
+      newQuestions[qIndex].options.push({label:`選択肢${newQuestions[qIndex].options.length+1}`, score:{A:0, B:0, C:0}});
+      setForm({...form, questions: newQuestions});
+  };
+
+  const removeOption = (qIndex, optIndex) => {
+      const newQuestions = [...form.questions];
+      if(newQuestions[qIndex].options.length <= 2) return alert('選択肢は最低2つ必要です');
+      newQuestions[qIndex].options = newQuestions[qIndex].options.filter((_, i) => i !== optIndex);
+      setForm({...form, questions: newQuestions});
+  };
+
   const addResult = () => {
       if(form.results.length >= 10) return alert('結果パターンは最大10個までです');
-      const nextType = String.fromCharCode(65 + form.results.length); // D, E, F...
+      const nextType = String.fromCharCode(65 + form.results.length);
       setForm({
           ...form,
-          results: [...form.results, {type: nextType, title:`結果${nextType}`, description:"..."}]
+          results: [...form.results, {type: nextType, title:`結果${nextType}`, description:"...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}]
       });
   };
 
@@ -132,16 +147,16 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       try {
           let prompt = "";
           if (form.mode === 'test') {
-              prompt = `テーマ「${aiTheme}」の4択学習クイズを作成して。質問5つ。各質問で正解は1つだけ。結果は高・中・低得点の3段階。`;
+              prompt = `テーマ「${aiTheme}」の4択学習クイズを作成して。質問5つ。各質問で正解は1つだけ（scoreのAを1、他を0にする）。結果は高得点・中得点・低得点の3段階。`;
           } else if (form.mode === 'fortune') {
-              prompt = `テーマ「${aiTheme}」の占いを作成して。質問5つ。結果は3パターン。`;
+              prompt = `テーマ「${aiTheme}」の占いを作成して。質問5つ（運勢には影響しない演出用）。結果は大吉・中吉・吉などの3パターン。`;
           } else {
               prompt = `テーマ「${aiTheme}」の性格/タイプ診断を作成して。質問5つ。結果は3タイプ。`;
           }
 
           const res = await fetch("https://api.openai.com/v1/chat/completions", {
               method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-              body: JSON.stringify({ model: "gpt-3.5-turbo", messages: [{ role: "user", content: prompt + `出力はJSON形式のみ: {title, description, questions:[{text, options:[{label, score:{A,B,C}}]...], results:[{type, title, description}]}` }] })
+              body: JSON.stringify({ model: "gpt-3.5-turbo", messages: [{ role: "user", content: prompt + `出力はJSON形式のみ: {title, description, questions:[{text, options:[{label, score:{A,B,C}}]...], results:[{type, title, description, link_url, link_text, line_url, line_text, qr_url, qr_text}]}` }] })
           });
           
           if (!res.ok) throw new Error('API request failed');
@@ -149,7 +164,11 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
           const content = data.choices[0].message.content;
           const jsonStr = content.substring(content.indexOf('{'), content.lastIndexOf('}') + 1);
           const json = JSON.parse(jsonStr);
-          setForm(prev => ({ ...prev, ...json })); 
+          // AI生成データに既存フィールドをマージ
+          setForm(prev => ({ 
+              ...prev, ...json,
+              results: json.results.map(r => ({...r, link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}))
+          })); 
           alert('AI生成が完了しました！');
       } catch(e) { alert('AI生成エラー: ' + e.message); } finally { setIsGenerating(false); }
   };
@@ -187,9 +206,16 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                 <button onClick={async ()=>{
                         setIsSaving(true); 
                         const payload = {
-                            title: form.title, description: form.description, category: form.category, color: form.color,
-                            questions: form.questions, results: form.results, 
-                            user_id: user?.id || null, layout: form.layout || 'card', image_url: form.image_url || null, mode: form.mode || 'diagnosis'
+                            title: form.title, 
+                            description: form.description, 
+                            category: form.category, 
+                            color: form.color,
+                            questions: form.questions, 
+                            results: form.results, 
+                            user_id: user?.id || null,
+                            layout: form.layout || 'card',
+                            image_url: form.image_url || null,
+                            mode: form.mode || 'diagnosis'
                         };
                         const returnedId = await onSave(payload, savedId || initialData?.id);
                         if(returnedId) setSavedId(returnedId); 
@@ -201,9 +227,8 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
         </div>
         
         <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
-            {/* Sidebar (Desktop) / Topbar (Mobile) */}
+            {/* Sidebar / Topbar */}
             <div className="bg-white border-b md:border-b-0 md:border-r flex flex-col w-full md:w-64 shrink-0">
-                {/* AI Section */}
                 <div className="p-4 bg-gradient-to-b from-purple-50 to-white border-b">
                     <div className="flex items-center gap-2 mb-2 text-purple-700 font-bold text-sm">
                         <Sparkles size={16}/> AI自動生成
@@ -219,7 +244,6 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                     <p className="text-[10px] text-gray-500 mt-2 text-center">※生成には10〜30秒ほどかかります</p>
                 </div>
 
-                {/* Tabs */}
                 <div className="flex md:flex-col overflow-x-auto md:overflow-visible p-2 md:p-4 gap-2 border-b md:border-b-0">
                     {TABS.map(tab=>(
                         <button key={tab.id} onClick={()=>setActiveTab(tab.id)} className={`flex-shrink-0 px-4 py-3 text-left font-bold rounded-lg transition-colors flex items-center gap-2 ${activeTab===tab.id?'bg-indigo-50 text-indigo-700':'text-gray-600 hover:bg-gray-50'}`}>
@@ -242,6 +266,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                     {activeTab === '基本設定' && (
                         <div className="animate-fade-in">
                             <h3 className="font-bold text-xl mb-6 border-b pb-2 flex items-center gap-2 text-gray-900"><Edit3 className="text-gray-400"/> 基本設定</h3>
+                            
                             {!initialData && (
                                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
                                     <label className="text-sm font-bold text-gray-900 block mb-3">作成する種類を選択</label>
@@ -258,6 +283,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                     </div>
                                 </div>
                             )}
+
                             <Input label="タイトル" val={form.title} onChange={v=>setForm({...form, title:v})} ph="タイトルを入力" />
                             <Textarea label="説明文" val={form.description} onChange={v=>setForm({...form, description:v})} />
                             
@@ -301,16 +327,24 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                     <button onClick={()=>removeQuestion(i)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500 p-1"><Trash2 size={16}/></button>
                                     <div className="font-bold text-indigo-600 mb-2">Q{i+1}</div>
                                     <Input label="質問文" val={q.text} onChange={v=>{const n=[...form.questions];n[i].text=v;setForm({...form, questions:n})}} />
+                                    
                                     <div className="space-y-3 mt-4">
-                                        <div className="flex text-xs text-gray-400 px-2">
-                                            <span className="flex-grow">選択肢</span>
+                                        <div className="flex text-xs text-gray-400 px-2 justify-between items-center">
+                                            <span>選択肢</span>
+                                            <button onClick={()=>addOption(i)} className="text-xs bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 flex items-center gap-1"><Plus size={12}/> 追加</button>
+                                        </div>
+                                        
+                                        {/* 選択肢ヘッダー(モード別) */}
+                                        <div className="flex text-xs text-gray-400 px-2 mt-2">
+                                            <span className="flex-grow"></span>
                                             {form.mode === 'test' ? <span className="w-16 text-center text-orange-500 font-bold">正解</span> 
                                             : form.mode === 'fortune' ? <span className="w-16 text-center text-purple-500 font-bold">ランダム</span>
                                             : <div className="flex gap-2 w-32 justify-end"><span>A</span><span>B</span><span>C</span></div>}
                                         </div>
+
                                         {q.options.map((o, j)=>(
                                             <div key={j} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
-                                                <div className="bg-gray-200 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">{j+1}</div>
+                                                <button onClick={()=>removeOption(i, j)} className="text-gray-300 hover:text-red-500"><Trash2 size={14}/></button>
                                                 <input className="flex-grow p-1 outline-none text-sm font-bold text-gray-900 placeholder-gray-400 min-w-0" value={o.label} onChange={e=>{const n=[...form.questions];n[i].options[j].label=e.target.value;setForm({...form, questions:n})}} placeholder={`選択肢${j+1}`} />
                                                 
                                                 {form.mode === 'test' ? (
@@ -345,7 +379,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                             </div>
                             
                             <div className={`p-4 rounded-lg mb-6 text-sm ${form.mode==='test'?'bg-orange-50 text-orange-800':form.mode==='fortune'?'bg-purple-50 text-purple-800':'bg-blue-50 text-blue-800'}`}>
-                                {form.mode === 'test' ? "正解数に応じて結果が変わります（上から順に高得点→低得点）" : form.mode === 'fortune' ? "結果はランダムに表示されます" : "獲得ポイントが多いタイプの結果が表示されます"}
+                                {form.mode === 'test' ? "正解数に応じて結果が変わります（範囲は自動で調整されます）" : form.mode === 'fortune' ? "結果はランダムに表示されます" : "獲得ポイントが多いタイプの結果が表示されます"}
                             </div>
                             
                             {form.results.map((r, i)=>(
@@ -356,6 +390,23 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                     </div>
                                     <Input label="タイトル" val={r.title} onChange={v=>{const n=[...form.results];n[i].title=v;setForm({...form, results:n})}} />
                                     <Textarea label="結果の説明文" val={r.description} onChange={v=>{const n=[...form.results];n[i].description=v;setForm({...form, results:n})}}/>
+                                    
+                                    {/* 復活させたリンク設定エリア */}
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200 mt-4">
+                                        <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2"><Link size={14}/> 誘導ボタン設定 (任意)</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                            <Input label="リンク先URL" val={r.link_url} onChange={v=>{const n=[...form.results];n[i].link_url=v;setForm({...form, results:n})}} ph="https://..." />
+                                            <Input label="ボタン文言" val={r.link_text} onChange={v=>{const n=[...form.results];n[i].link_text=v;setForm({...form, results:n})}} ph="詳細を見る" />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-100">
+                                            <Input label="LINE登録URL" val={r.line_url} onChange={v=>{const n=[...form.results];n[i].line_url=v;setForm({...form, results:n})}} ph="https://line.me/..." />
+                                            <Input label="ボタン文言" val={r.line_text} onChange={v=>{const n=[...form.results];n[i].line_text=v;setForm({...form, results:n})}} ph="LINEで相談する" />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                                            <Input label="QRコード画像URL" val={r.qr_url} onChange={v=>{const n=[...form.results];n[i].qr_url=v;setForm({...form, results:n})}} ph="https://..." />
+                                            <Input label="ボタン文言" val={r.qr_text} onChange={v=>{const n=[...form.results];n[i].qr_text=v;setForm({...form, results:n})}} ph="QRコードを表示" />
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                             <button onClick={addResult} className="w-full py-3 bg-gray-50 border-2 border-dashed border-gray-300 text-gray-500 rounded-xl font-bold hover:bg-gray-100 hover:border-gray-400 flex items-center justify-center gap-2"><Plus size={16}/> 結果パターンを追加する</button>
