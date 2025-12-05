@@ -1,15 +1,39 @@
 import React, { useState } from 'react';
 import { 
     Search, Zap, TrendingUp, MessageCircle, 
-    Sparkles, ArrowRight, Play, CheckCircle 
+    Sparkles, ArrowRight, Play, CheckCircle,
+    ChevronLeft, ChevronRight // ★追加: ページ送り用アイコン
 } from 'lucide-react';
 import Header from './Header'; 
 
 const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCreate, setPage, isAdmin }) => {
     
-    // カテゴリフィルタリング用
     const [filter, setFilter] = useState('All');
+    const [currentPage, setCurrentPage] = useState(1); // ★追加: 現在のページ番号
+    const ITEMS_PER_PAGE = 9; // ★追加: 1ページに表示する数（9個＝3列×3行）
+
+    // フィルタリング
     const filteredQuizzes = filter === 'All' ? quizzes : quizzes.filter(q => q.category === filter);
+
+    // ★追加: ページネーション計算
+    const totalPages = Math.ceil(filteredQuizzes.length / ITEMS_PER_PAGE);
+    const displayQuizzes = filteredQuizzes.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    // カテゴリ切り替え時にページをリセットする処理
+    const handleFilterChange = (cat) => {
+        setFilter(cat);
+        setCurrentPage(1);
+    };
+
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+        // ページ上部へスクロール（任意）
+        const el = document.getElementById('quiz-list-top');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+    };
 
     return (
         <div className="min-h-screen bg-white font-sans flex flex-col">
@@ -44,7 +68,7 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                 </div>
 
                 {/* クイズ一覧セクション */}
-                <div className="max-w-6xl mx-auto py-16 px-4">
+                <div id="quiz-list-top" className="max-w-6xl mx-auto py-16 px-4">
                     <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 border-b border-gray-100 pb-4">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -58,7 +82,7 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                             {['All', 'Business', 'Education', 'Fortune'].map(cat => (
                                 <button 
                                     key={cat}
-                                    onClick={()=>setFilter(cat)}
+                                    onClick={()=>handleFilterChange(cat)}
                                     className={`px-4 py-2 rounded-md text-xs font-bold transition-all ${filter===cat ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     {cat === 'All' ? 'すべて' : cat === 'Business' ? 'ビジネス' : cat === 'Education' ? '学習・検定' : '占い'}
@@ -72,49 +96,77 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                             {[1,2,3].map(i => <div key={i} className="h-64 bg-gray-200 rounded-2xl"></div>)}
                         </div>
                     ) : (
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredQuizzes.length > 0 ? filteredQuizzes.map(quiz => (
-                                <div key={quiz.id} onClick={()=>onPlay(quiz)} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all cursor-pointer group overflow-hidden flex flex-col h-full transform hover:-translate-y-1">
-                                    <div className={`h-40 w-full relative overflow-hidden ${quiz.color || 'bg-indigo-600'}`}>
-                                        {quiz.image_url ? (
-                                            <img src={quiz.image_url} alt={quiz.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
-                                        ) : (
-                                            <div className="absolute inset-0 flex items-center justify-center opacity-30 text-white">
-                                                <Sparkles size={48}/>
+                        <>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {/* ★修正: displayQuizzes (ページ分割後のデータ) を表示 */}
+                                {displayQuizzes.length > 0 ? displayQuizzes.map(quiz => (
+                                    <div key={quiz.id} onClick={()=>onPlay(quiz)} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all cursor-pointer group overflow-hidden flex flex-col h-full transform hover:-translate-y-1">
+                                        <div className={`h-40 w-full relative overflow-hidden ${quiz.color || 'bg-indigo-600'}`}>
+                                            {quiz.image_url ? (
+                                                <img src={quiz.image_url} alt={quiz.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+                                            ) : (
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-30 text-white">
+                                                    <Sparkles size={48}/>
+                                                </div>
+                                            )}
+                                            <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                                {quiz.layout === 'chat' ? <MessageCircle size={10}/> : <Zap size={10}/>}
+                                                {quiz.layout === 'chat' ? 'CHAT' : 'CARD'}
                                             </div>
-                                        )}
-                                        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                            {quiz.layout === 'chat' ? <MessageCircle size={10}/> : <Zap size={10}/>}
-                                            {quiz.layout === 'chat' ? 'CHAT' : 'CARD'}
+                                        </div>
+                                        <div className="p-6 flex flex-col flex-grow">
+                                            <div className="mb-2 flex items-center gap-2">
+                                                <span className={`text-[10px] font-bold px-2 py-1 rounded ${
+                                                    quiz.mode === 'test' ? 'bg-orange-100 text-orange-600' : 
+                                                    quiz.mode === 'fortune' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                                                }`}>
+                                                    {quiz.mode === 'test' ? '検定' : quiz.mode === 'fortune' ? '占い' : '診断'}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                    <Play size={10}/> {quiz.views_count||0}
+                                                </span>
+                                            </div>
+                                            <h3 className="font-bold text-gray-900 text-lg mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">{quiz.title}</h3>
+                                            <p className="text-gray-500 text-xs line-clamp-3 mb-4 leading-relaxed">{quiz.description}</p>
+                                            <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center text-xs font-bold text-indigo-600">
+                                                <span>診断する</span>
+                                                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform"/>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="p-6 flex flex-col flex-grow">
-                                        <div className="mb-2 flex items-center gap-2">
-                                            <span className={`text-[10px] font-bold px-2 py-1 rounded ${
-                                                quiz.mode === 'test' ? 'bg-orange-100 text-orange-600' : 
-                                                quiz.mode === 'fortune' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
-                                            }`}>
-                                                {quiz.mode === 'test' ? '検定' : quiz.mode === 'fortune' ? '占い' : '診断'}
-                                            </span>
-                                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                                <Play size={10}/> {quiz.views_count||0}
-                                            </span>
-                                        </div>
-                                        <h3 className="font-bold text-gray-900 text-lg mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">{quiz.title}</h3>
-                                        <p className="text-gray-500 text-xs line-clamp-3 mb-4 leading-relaxed">{quiz.description}</p>
-                                        <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center text-xs font-bold text-indigo-600">
-                                            <span>診断する</span>
-                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform"/>
-                                        </div>
+                                )) : (
+                                    <div className="col-span-full text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                        <p className="text-gray-400 font-bold mb-4">まだクイズがありません</p>
+                                        <button onClick={onCreate} className="bg-indigo-600 text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-indigo-700">一番乗りで作る</button>
                                     </div>
-                                </div>
-                            )) : (
-                                <div className="col-span-full text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                                    <p className="text-gray-400 font-bold mb-4">まだクイズがありません</p>
-                                    <button onClick={onCreate} className="bg-indigo-600 text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-indigo-700">一番乗りで作る</button>
+                                )}
+                            </div>
+
+                            {/* ★追加: ページネーションボタン */}
+                            {totalPages > 1 && (
+                                <div className="flex justify-center items-center gap-6 mt-12">
+                                    <button 
+                                        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-3 rounded-full border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronLeft size={24} />
+                                    </button>
+                                    
+                                    <div className="text-sm font-bold text-gray-500">
+                                        <span className="text-indigo-600 text-lg">{currentPage}</span> / {totalPages}
+                                    </div>
+
+                                    <button 
+                                        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="p-3 rounded-full border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronRight size={24} />
+                                    </button>
                                 </div>
                             )}
-                        </div>
+                        </>
                     )}
                 </div>
             </div>
@@ -122,7 +174,7 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
             {/* フッター */}
             <footer className="bg-gray-900 text-gray-400 py-12 mt-12 border-t border-gray-800">
                 <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-4 gap-8">
-                    {/* カラム1: ロゴと説明 */}
+                    {/* カラム1 */}
                     <div className="col-span-1 md:col-span-2">
                         <h2 className="text-white font-bold text-xl mb-4 flex items-center gap-2">
                             <Sparkles className="text-pink-500"/> 診断クイズメーカー
@@ -137,7 +189,7 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                         </button>
                     </div>
 
-                    {/* カラム2: メニュー */}
+                    {/* カラム2 */}
                     <div>
                         <h3 className="text-white font-bold mb-4 border-b border-gray-700 pb-2 inline-block">メニュー</h3>
                         <ul className="space-y-3 text-sm">
@@ -148,7 +200,7 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                         </ul>
                     </div>
 
-                    {/* カラム3: サポート・規約 */}
+                    {/* カラム3 */}
                     <div>
                         <h3 className="text-white font-bold mb-4 border-b border-gray-700 pb-2 inline-block">サポート・規約</h3>
                         <ul className="space-y-3 text-sm">
