@@ -224,16 +224,16 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                     </ResponsiveContainer>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
+                                <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                                     <table className="w-full text-sm text-left text-gray-500">
-                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                                             <tr>
-                                                <th className="px-4 py-3">タイトル</th>
-                                                <th className="px-4 py-3 text-right">閲覧数</th>
-                                                <th className="px-4 py-3 text-right">完了数</th>
-                                                <th className="px-4 py-3 text-right">完了率</th>
-                                                <th className="px-4 py-3 text-right">クリック</th>
-                                                <th className="px-4 py-3 text-right">CTR</th>
+                                                <th className="px-4 py-3 bg-gray-50">タイトル</th>
+                                                <th className="px-4 py-3 text-right bg-gray-50">閲覧数</th>
+                                                <th className="px-4 py-3 text-right bg-gray-50">完了数</th>
+                                                <th className="px-4 py-3 text-right bg-gray-50">完了率</th>
+                                                <th className="px-4 py-3 text-right bg-gray-50">クリック</th>
+                                                <th className="px-4 py-3 text-right bg-gray-50">CTR</th>
                                             </tr>
                                         </thead>
                                         <tbody>

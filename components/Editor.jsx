@@ -301,8 +301,11 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       setForm({ ...form, mode: newMode, category: newCategory, results: newResults });
   };
 
-  const handlePublish = () => { 
-      const urlId = savedId || initialData?.slug || initialData?.id;
+  const handlePublish = (urlId) => { 
+      if (!urlId) {
+          alert('保存が完了していません。先に保存してください。');
+          return;
+      }
       const url = `${window.location.origin}?id=${urlId}`;
       navigator.clipboard.writeText(url); 
       alert(`公開URLをクリップボードにコピーしました！\n\n${url}`); 
@@ -453,8 +456,8 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                 </span>
             </div>
             <div className="flex gap-2">
-                {savedId && (
-                    <button onClick={handlePublish} className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2 animate-pulse whitespace-nowrap">
+                {(savedId || initialData?.slug || initialData?.id) && (
+                    <button onClick={() => handlePublish(savedId || initialData?.slug || initialData?.id)} className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2 animate-pulse whitespace-nowrap">
                         <Share2 size={18}/> <span className="hidden md:inline">公開URL</span>
                     </button>
                 )}
@@ -952,12 +955,12 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                         const returnedId = await onSave(payload, savedId || initialData?.id);
                                         if(returnedId) {
                                             setSavedId(returnedId);
-                                            handlePublish();
+                                            handlePublish(returnedId);
                                         }
                                         setIsSaving(false);
                                     }} 
                                     disabled={isSaving} 
-                                    className="px-8 py-3 bg-green-600 text-white font-bold hover:bg-green-700 rounded-lg transition-all shadow-md flex items-center gap-2 text-lg"
+                                    className="px-8 py-3 bg-green-600 text-white font-bold hover:bg-green-700 disabled:bg-gray-400 rounded-lg transition-all shadow-md flex items-center gap-2 text-lg"
                                 >
                                     {isSaving ? <Loader2 className="animate-spin" size={20}/> : <CheckCircle size={20}/>} 
                                     完成・公開する
