@@ -133,9 +133,11 @@ const App = () => {
               collect_email: form.collect_email || false
           };
           
-          // 新規作成時はSlugを生成
+          // 新規作成時、または編集時にURL再発行フラグがtrueの場合はSlugを生成
           if (!id && !form.slug) { 
               payload.slug = generateSlug(); 
+          } else if (id && form.regenerateSlug) {
+              payload.slug = generateSlug();
           }
 
           let result;

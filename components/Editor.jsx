@@ -3,7 +3,7 @@ import {
     Edit3, MessageSquare, Trophy, Loader2, Save, Share2, 
     Sparkles, Wand2, BookOpen, Image as ImageIcon, 
     Layout, MessageCircle, ArrowLeft, Briefcase, GraduationCap, 
-    CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode, UploadCloud, Mail, FileText, ChevronDown
+    CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode, UploadCloud, Mail, FileText, ChevronDown, RefreshCw
 } from 'lucide-react';
 import { generateSlug } from '../lib/utils';
 import { supabase } from '../lib/supabase';
@@ -228,17 +228,19 @@ const Textarea = ({label, val, onChange}) => (
 
 const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
   useEffect(() => { document.title = "クイズ作成・編集 | 診断クイズメーカー"; }, []);
-  const [activeTab, setActiveTab] = useState('基本設定');
+  const [currentStep, setCurrentStep] = useState(initialData ? 2 : 1); // 編集時はステップ2から
   const [isSaving, setIsSaving] = useState(false);
   const [savedId, setSavedId] = useState(null);
   const [aiTheme, setAiTheme] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [regenerateSlug, setRegenerateSlug] = useState(false);
 
-  const TABS = [
-      { id: '基本設定', icon: Edit3, label: '基本設定' },
-      { id: '質問作成', icon: MessageSquare, label: '質問作成' },
-      { id: '結果ページ', icon: Trophy, label: '結果ページ' }
+  const STEPS = [
+      { id: 1, icon: Sparkles, label: 'クイズの種類', description: 'テンプレートまたはAI生成' },
+      { id: 2, icon: Edit3, label: '基本設定', description: 'タイトルや画像を設定' },
+      { id: 3, icon: MessageSquare, label: '質問作成', description: '質問と選択肢を作成' },
+      { id: 4, icon: Trophy, label: '結果ページ', description: '診断結果を設定' }
   ];
 
   const defaultForm = {
@@ -430,6 +432,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans text-gray-900">
+        {/* ヘッダー */}
         <div className="bg-white border-b px-6 py-4 flex justify-between sticky top-0 z-50 shadow-sm">
             <div className="flex items-center gap-3">
                 <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full text-gray-700"><ArrowLeft/></button>
@@ -455,7 +458,8 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                             title: form.title, description: form.description, category: form.category, color: form.color,
                             questions: form.questions, results: form.results, 
                             user_id: user?.id || null, layout: form.layout || 'card', image_url: form.image_url || null, mode: form.mode || 'diagnosis',
-                            collect_email: form.collect_email || false
+                            collect_email: form.collect_email || false,
+                            regenerateSlug: regenerateSlug
                         };
                         const returnedId = await onSave(payload, savedId || initialData?.id);
                         if(returnedId) setSavedId(returnedId); 
@@ -465,99 +469,261 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                 </button>
             </div>
         </div>
-        
-        <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
-            {/* Sidebar */}
-            <div className="bg-white border-b md:border-b-0 md:border-r flex flex-col w-full md:w-64 shrink-0">
-                {/* テンプレート選択 */}
-                <div className="p-4 bg-gray-50 border-b">
-                    <p className="text-xs font-bold text-gray-500 mb-2 flex items-center gap-1"><FileText size={12}/> テンプレートから作る</p>
-                    <div className="space-y-2">
-                        <div className="relative">
-                            <select onChange={(e) => applyPreset('business', e.target.value)} className="w-full text-xs font-bold p-2 border rounded bg-white text-blue-600 border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
-                                {PRESETS.business.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-2 top-2.5 text-blue-400 pointer-events-none"/>
-                        </div>
-                        <div className="relative">
-                            <select onChange={(e) => applyPreset('education', e.target.value)} className="w-full text-xs font-bold p-2 border rounded bg-white text-green-600 border-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none">
-                                {PRESETS.education.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-2 top-2.5 text-green-400 pointer-events-none"/>
-                        </div>
-                        <div className="relative">
-                            <select onChange={(e) => applyPreset('fortune', e.target.value)} className="w-full text-xs font-bold p-2 border rounded bg-white text-purple-600 border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none">
-                                {PRESETS.fortune.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-2 top-2.5 text-purple-400 pointer-events-none"/>
-                        </div>
-                    </div>
-                </div>
 
-                <div className="p-4 bg-gradient-to-b from-purple-50 to-white border-b">
-                    <div className="flex items-center gap-2 mb-2 text-purple-700 font-bold text-sm">
-                        <Sparkles size={16}/> AI自動生成
-                    </div>
-                    <textarea 
-                        className="w-full border border-purple-200 p-2 rounded-lg text-xs mb-2 focus:ring-2 focus:ring-purple-500 outline-none resize-none bg-white text-gray-900 placeholder-gray-400" 
-                        rows={2} placeholder="テーマを入力..." 
-                        value={aiTheme} onChange={e=>setAiTheme(e.target.value)} 
-                    />
-                    <button onClick={handleAiGenerate} disabled={isGenerating} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-bold text-xs transition-all shadow flex items-center justify-center gap-1">
-                        {isGenerating ? <Loader2 className="animate-spin" size={12}/> : <Wand2 size={12}/>} 生成する
-                    </button>
-                    <p className="text-[10px] text-gray-500 mt-2 text-center">※生成には10〜30秒ほどかかります</p>
-                </div>
-
-                <div className="flex md:flex-col overflow-x-auto md:overflow-visible p-2 md:p-4 gap-2 border-b md:border-b-0">
-                    {TABS.map(tab=>(
-                        <button key={tab.id} onClick={()=>setActiveTab(tab.id)} className={`flex-shrink-0 px-4 py-3 text-left font-bold rounded-lg transition-colors flex items-center gap-2 ${activeTab===tab.id?'bg-indigo-50 text-indigo-700':'text-gray-600 hover:bg-gray-50'}`}>
-                            <tab.icon size={16}/>
-                            <span className="capitalize">{tab.label}</span>
-                        </button>
+        {/* プログレスバー */}
+        <div className="bg-white border-b px-6 py-4">
+            <div className="max-w-4xl mx-auto">
+                <div className="flex items-center justify-between relative">
+                    {STEPS.map((step, index) => (
+                        <React.Fragment key={step.id}>
+                            <div className="flex flex-col items-center relative z-10 flex-1">
+                                <button
+                                    onClick={() => setCurrentStep(step.id)}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+                                        currentStep === step.id
+                                            ? 'bg-indigo-600 text-white shadow-lg scale-110'
+                                            : currentStep > step.id
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-gray-200 text-gray-400'
+                                    }`}
+                                >
+                                    {currentStep > step.id ? <CheckCircle size={20} /> : <step.icon size={20} />}
+                                </button>
+                                <div className="text-center mt-2 hidden md:block">
+                                    <div className={`text-xs font-bold ${currentStep === step.id ? 'text-indigo-600' : 'text-gray-500'}`}>
+                                        {step.label}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 mt-0.5">{step.description}</div>
+                                </div>
+                            </div>
+                            {index < STEPS.length - 1 && (
+                                <div className={`h-0.5 flex-1 mx-2 transition-all ${currentStep > step.id ? 'bg-green-500' : 'bg-gray-200'}`} style={{marginTop: '-20px'}}></div>
+                            )}
+                        </React.Fragment>
                     ))}
-                    
-                    <button onClick={()=>setPage('howto')} className="flex-shrink-0 w-full px-4 py-3 text-left text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-2 border-t mt-2 pt-4">
-                        <BookOpen size={14}/> 使い方・規約を見る
-                    </button>
                 </div>
             </div>
+        </div>
+        
+        <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
+            {/* サイドバー（ステップ1以外で表示） */}
+            {currentStep !== 1 && (
+            <div className="bg-white border-b md:border-b-0 md:border-r flex flex-col w-full md:w-64 shrink-0">
+                {/* クイックアクション */}
+                <div className="p-4 bg-gradient-to-b from-indigo-50 to-white border-b">
+                    <p className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1">
+                        <Sparkles size={14}/> クイックアクション
+                    </p>
+                    <button 
+                        onClick={() => setCurrentStep(1)} 
+                        className="w-full bg-white border border-indigo-200 text-indigo-600 py-2 px-3 rounded-lg font-bold text-xs hover:bg-indigo-50 transition-all mb-2 flex items-center justify-center gap-1"
+                    >
+                        <FileText size={12}/> テンプレート選択
+                    </button>
+                    <button 
+                        onClick={() => setCurrentStep(1)} 
+                        className="w-full bg-white border border-purple-200 text-purple-600 py-2 px-3 rounded-lg font-bold text-xs hover:bg-purple-50 transition-all flex items-center justify-center gap-1"
+                    >
+                        <Wand2 size={12}/> AI自動生成
+                    </button>
+                </div>
 
-            {/* Main Content (以下変更なし) */}
+                {/* ステップナビゲーション */}
+                <div className="p-4 border-b">
+                    <p className="text-xs font-bold text-gray-500 mb-3">ステップ移動</p>
+                    <div className="space-y-2">
+                        {STEPS.map(step => (
+                            <button
+                                key={step.id}
+                                onClick={() => setCurrentStep(step.id)}
+                                className={`w-full text-left px-3 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2 ${
+                                    currentStep === step.id
+                                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                }`}
+                            >
+                                <step.icon size={14} />
+                                <span>{step.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex-grow"></div>
+                
+                <button onClick={()=>setPage('howto')} className="w-full px-4 py-3 text-left text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-2 border-t">
+                    <BookOpen size={14}/> 使い方・規約を見る
+                </button>
+            </div>
+            )}
+
+            {/* Main Content */}
             <div className="flex-grow p-4 md:p-8 overflow-y-auto bg-gray-50">
                 <div className="max-w-3xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-gray-100 min-h-[500px]">
-                    {activeTab === '基本設定' && (
+                    
+                    {/* ステップ1: クイズの種類選択 */}
+                    {currentStep === 1 && (
                         <div className="animate-fade-in">
-                            <h3 className="font-bold text-xl mb-6 border-b pb-2 flex items-center gap-2 text-gray-900"><Edit3 className="text-gray-400"/> 基本設定</h3>
+                            <div className="text-center mb-8">
+                                <h3 className="font-bold text-2xl mb-2 text-gray-900">クイズの種類を選択</h3>
+                                <p className="text-sm text-gray-500">まずは作成方法を選んでください</p>
+                            </div>
+
+                            {/* クイズモード選択 */}
                             {!initialData && (
-                                <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                    <label className="text-sm font-bold text-gray-900 block mb-3">作成する種類を選択</label>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <button onClick={()=>switchMode('diagnosis')} className={`py-4 rounded-xl border-2 font-bold flex flex-col items-center gap-2 text-xs md:text-sm ${form.mode==='diagnosis' ? 'border-indigo-600 bg-white text-indigo-700' : 'border-transparent bg-white shadow-sm text-gray-400'}`}>
-                                            <Briefcase size={20}/> ビジネス
+                                <div className="mb-10">
+                                    <h4 className="font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
+                                        <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
+                                        クイズの種類
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <button onClick={()=>switchMode('diagnosis')} className={`p-6 rounded-xl border-2 font-bold flex flex-col items-center gap-3 transition-all hover:shadow-lg ${form.mode==='diagnosis' ? 'border-indigo-600 bg-indigo-50 shadow-md' : 'border-gray-200 bg-white'}`}>
+                                            <Briefcase size={32} className={form.mode==='diagnosis' ? 'text-indigo-600' : 'text-gray-400'}/>
+                                            <div className="text-center">
+                                                <div className={`font-bold ${form.mode==='diagnosis' ? 'text-indigo-700' : 'text-gray-700'}`}>ビジネス診断</div>
+                                                <div className="text-xs text-gray-500 mt-1">性格・タイプ診断など</div>
+                                            </div>
                                         </button>
-                                        <button onClick={()=>switchMode('test')} className={`py-4 rounded-xl border-2 font-bold flex flex-col items-center gap-2 text-xs md:text-sm ${form.mode==='test' ? 'border-orange-500 bg-white text-orange-600' : 'border-transparent bg-white shadow-sm text-gray-400'}`}>
-                                            <GraduationCap size={20}/> 学習
+                                        <button onClick={()=>switchMode('test')} className={`p-6 rounded-xl border-2 font-bold flex flex-col items-center gap-3 transition-all hover:shadow-lg ${form.mode==='test' ? 'border-orange-500 bg-orange-50 shadow-md' : 'border-gray-200 bg-white'}`}>
+                                            <GraduationCap size={32} className={form.mode==='test' ? 'text-orange-600' : 'text-gray-400'}/>
+                                            <div className="text-center">
+                                                <div className={`font-bold ${form.mode==='test' ? 'text-orange-700' : 'text-gray-700'}`}>学習テスト</div>
+                                                <div className="text-xs text-gray-500 mt-1">正解・不正解のクイズ</div>
+                                            </div>
                                         </button>
-                                        <button onClick={()=>switchMode('fortune')} className={`py-4 rounded-xl border-2 font-bold flex flex-col items-center gap-2 text-xs md:text-sm ${form.mode==='fortune' ? 'border-purple-500 bg-white text-purple-600' : 'border-transparent bg-white shadow-sm text-gray-400'}`}>
-                                            <Sparkles size={20}/> 占い
+                                        <button onClick={()=>switchMode('fortune')} className={`p-6 rounded-xl border-2 font-bold flex flex-col items-center gap-3 transition-all hover:shadow-lg ${form.mode==='fortune' ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-200 bg-white'}`}>
+                                            <Sparkles size={32} className={form.mode==='fortune' ? 'text-purple-600' : 'text-gray-400'}/>
+                                            <div className="text-center">
+                                                <div className={`font-bold ${form.mode==='fortune' ? 'text-purple-700' : 'text-gray-700'}`}>占い</div>
+                                                <div className="text-xs text-gray-500 mt-1">運勢・相性診断など</div>
+                                            </div>
                                         </button>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between">
-                                <div>
-                                    <h4 className="font-bold text-green-900 flex items-center gap-2"><Mail size={18}/> リード獲得機能</h4>
-                                    <p className="text-xs text-green-700 mt-1">結果表示の前にメールアドレスの入力を求めます。</p>
+                            {/* 作成方法選択 */}
+                            <div className="mb-10">
+                                <h4 className="font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
+                                    <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
+                                    作成方法を選択
+                                </h4>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {/* テンプレートから作成 */}
+                                    <div className="border-2 border-gray-200 rounded-xl p-6 bg-white hover:border-indigo-300 transition-all">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="bg-blue-100 p-3 rounded-lg">
+                                                <FileText size={24} className="text-blue-600"/>
+                                            </div>
+                                            <div>
+                                                <h5 className="font-bold text-gray-900">テンプレートから作成</h5>
+                                                <p className="text-xs text-gray-500">プロが作ったサンプルをカスタマイズ</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="relative">
+                                                <select onChange={(e) => { applyPreset('business', e.target.value); if(e.target.value !== '0') setCurrentStep(2); }} className="w-full text-sm font-bold p-3 border-2 rounded-lg bg-white text-blue-600 border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none hover:border-blue-300 transition-all">
+                                                    {PRESETS.business.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
+                                                </select>
+                                                <ChevronDown size={16} className="absolute right-3 top-4 text-blue-400 pointer-events-none"/>
+                                            </div>
+                                            <div className="relative">
+                                                <select onChange={(e) => { applyPreset('education', e.target.value); if(e.target.value !== '0') setCurrentStep(2); }} className="w-full text-sm font-bold p-3 border-2 rounded-lg bg-white text-green-600 border-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none hover:border-green-300 transition-all">
+                                                    {PRESETS.education.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
+                                                </select>
+                                                <ChevronDown size={16} className="absolute right-3 top-4 text-green-400 pointer-events-none"/>
+                                            </div>
+                                            <div className="relative">
+                                                <select onChange={(e) => { applyPreset('fortune', e.target.value); if(e.target.value !== '0') setCurrentStep(2); }} className="w-full text-sm font-bold p-3 border-2 rounded-lg bg-white text-purple-600 border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none hover:border-purple-300 transition-all">
+                                                    {PRESETS.fortune.map((p, i) => <option key={i} value={i}>{p.label}</option>)}
+                                                </select>
+                                                <ChevronDown size={16} className="absolute right-3 top-4 text-purple-400 pointer-events-none"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* AIで自動生成 */}
+                                    <div className="border-2 border-purple-200 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-white hover:border-purple-300 transition-all">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="bg-purple-100 p-3 rounded-lg">
+                                                <Wand2 size={24} className="text-purple-600"/>
+                                            </div>
+                                            <div>
+                                                <h5 className="font-bold text-gray-900 flex items-center gap-2">
+                                                    AIで自動生成
+                                                    <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">人気</span>
+                                                </h5>
+                                                <p className="text-xs text-gray-500">テーマを入力するだけで完成</p>
+                                            </div>
+                                        </div>
+                                        <textarea 
+                                            className="w-full border-2 border-purple-200 p-3 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-purple-500 outline-none resize-none bg-white text-gray-900 placeholder-gray-400" 
+                                            rows={3} 
+                                            placeholder="例: 起業家タイプ診断、SNS発信力チェック、英語の前置詞クイズ..." 
+                                            value={aiTheme} 
+                                            onChange={e=>setAiTheme(e.target.value)} 
+                                        />
+                                        <button 
+                                            onClick={async () => {
+                                                await handleAiGenerate();
+                                                if(!isGenerating) setCurrentStep(2);
+                                            }} 
+                                            disabled={isGenerating || !aiTheme} 
+                                            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white py-3 rounded-lg font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                                        >
+                                            {isGenerating ? (
+                                                <>
+                                                    <Loader2 className="animate-spin" size={18}/>
+                                                    生成中...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles size={18}/>
+                                                    AIで自動生成する
+                                                </>
+                                            )}
+                                        </button>
+                                        <p className="text-xs text-gray-500 mt-2 text-center">※生成には10〜30秒ほどかかります</p>
+                                    </div>
+
+                                    {/* ゼロから作成 */}
+                                    <div className="border-2 border-gray-200 rounded-xl p-6 bg-white hover:border-indigo-300 transition-all">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-gray-100 p-3 rounded-lg">
+                                                    <Edit3 size={24} className="text-gray-600"/>
+                                                </div>
+                                                <div>
+                                                    <h5 className="font-bold text-gray-900">ゼロから作成</h5>
+                                                    <p className="text-xs text-gray-500">すべて自分で設定する</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => setCurrentStep(2)} 
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold text-sm transition-all shadow-md hover:shadow-lg"
+                                            >
+                                                次へ進む
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" className="sr-only peer" checked={form.collect_email} onChange={e=>setForm({...form, collect_email: e.target.checked})} />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                                </label>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ステップ2: 基本設定 */}
+                    {currentStep === 2 && (
+                        <div className="animate-fade-in">
+                            <div className="flex justify-between items-center mb-6 border-b pb-4">
+                                <div>
+                                    <h3 className="font-bold text-xl text-gray-900 flex items-center gap-2">
+                                        <Edit3 className="text-indigo-600"/> 基本設定
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1">クイズのタイトルや見た目を設定します</p>
+                                </div>
                             </div>
 
-                            <Input label="タイトル" val={form.title} onChange={v=>setForm({...form, title:v})} ph="タイトルを入力" />
+                            <Input label="タイトル" val={form.title} onChange={v=>setForm({...form, title:v})} ph="例: あなたの起業家タイプ診断" />
                             <Textarea label="説明文" val={form.description} onChange={v=>setForm({...form, description:v})} />
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -591,14 +757,66 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                 </div>
                                 {form.image_url && <img src={form.image_url} alt="Preview" className="h-32 w-full object-cover rounded-lg mt-2 border"/>}
                             </div>
+
+                            {/* 高度な設定（折りたたみ） */}
+                            <details className="mb-6 border border-gray-200 rounded-xl overflow-hidden">
+                                <summary className="bg-gray-50 px-4 py-3 cursor-pointer font-bold text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-between">
+                                    <span className="flex items-center gap-2">
+                                        <ChevronDown size={16} className="transition-transform"/>
+                                        高度な設定
+                                    </span>
+                                    <span className="text-xs text-gray-500">オプション</span>
+                                </summary>
+                                <div className="p-4 space-y-4 bg-white">
+                                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between">
+                                        <div>
+                                            <h4 className="font-bold text-green-900 flex items-center gap-2"><Mail size={18}/> リード獲得機能</h4>
+                                            <p className="text-xs text-green-700 mt-1">結果表示の前にメールアドレスの入力を求めます。</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={form.collect_email} onChange={e=>setForm({...form, collect_email: e.target.checked})} />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                        </label>
+                                    </div>
+
+                                    {initialData && (
+                                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+                                            <div>
+                                                <h4 className="font-bold text-amber-900 flex items-center gap-2">公開URLを再発行</h4>
+                                                <p className="text-xs text-amber-700 mt-1">チェックすると保存時に新しいURLが発行されます。通常は変更不要です。</p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer" checked={regenerateSlug} onChange={e=>setRegenerateSlug(e.target.checked)} />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                            </details>
+
+                            {/* ナビゲーションボタン */}
+                            <div className="flex justify-between items-center pt-6 border-t">
+                                <button onClick={() => setCurrentStep(1)} className="px-6 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition-all flex items-center gap-2">
+                                    <ArrowLeft size={18}/> 戻る
+                                </button>
+                                <button onClick={() => setCurrentStep(3)} className="px-6 py-3 bg-indigo-600 text-white font-bold hover:bg-indigo-700 rounded-lg transition-all shadow-md flex items-center gap-2">
+                                    次へ進む <ChevronDown size={18} className="rotate-[-90deg]"/>
+                                </button>
+                            </div>
                         </div>
                     )}
                     
-                    {activeTab === '質問作成' && (
+                    {/* ステップ3: 質問作成 */}
+                    {currentStep === 3 && (
                         <div className="space-y-8 animate-fade-in">
-                            <div className="flex justify-between items-center border-b pb-2 mb-6">
-                                <h3 className="font-bold text-xl flex items-center gap-2 text-gray-900"><MessageSquare className="text-gray-400"/> 質問 ({form.questions.length}問)</h3>
-                                <button onClick={addQuestion} className="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-bold hover:bg-indigo-100 flex items-center gap-1"><Plus size={14}/> 追加</button>
+                            <div className="flex justify-between items-center border-b pb-4 mb-6">
+                                <div>
+                                    <h3 className="font-bold text-xl flex items-center gap-2 text-gray-900">
+                                        <MessageSquare className="text-indigo-600"/> 質問作成 ({form.questions.length}問)
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1">質問と選択肢を設定します</p>
+                                </div>
+                                <button onClick={addQuestion} className="text-sm bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-bold hover:bg-indigo-100 flex items-center gap-1 transition-all"><Plus size={16}/> 追加</button>
                             </div>
                             
                             {form.questions.map((q, i)=>(
@@ -649,17 +867,33 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                 </div>
                             ))}
                             <button onClick={addQuestion} className="w-full py-3 bg-gray-50 border-2 border-dashed border-gray-300 text-gray-500 rounded-xl font-bold hover:bg-gray-100 hover:border-gray-400 flex items-center justify-center gap-2"><Plus size={16}/> 質問を追加する</button>
+                            
+                            {/* ナビゲーションボタン */}
+                            <div className="flex justify-between items-center pt-6 border-t">
+                                <button onClick={() => setCurrentStep(2)} className="px-6 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition-all flex items-center gap-2">
+                                    <ArrowLeft size={18}/> 戻る
+                                </button>
+                                <button onClick={() => setCurrentStep(4)} className="px-6 py-3 bg-indigo-600 text-white font-bold hover:bg-indigo-700 rounded-lg transition-all shadow-md flex items-center gap-2">
+                                    次へ進む <ChevronDown size={18} className="rotate-[-90deg]"/>
+                                </button>
+                            </div>
                         </div>
                     )}
 
-                    {activeTab === '結果ページ' && (
+                    {/* ステップ4: 結果ページ */}
+                    {currentStep === 4 && (
                         <div className="space-y-8 animate-fade-in">
-                            <div className="flex justify-between items-center border-b pb-2 mb-6">
-                                <h3 className="font-bold text-xl flex items-center gap-2 text-gray-900"><Trophy className="text-gray-400"/> 結果パターン ({form.results.length})</h3>
-                                <button onClick={addResult} className="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-bold hover:bg-indigo-100 flex items-center gap-1"><Plus size={14}/> 追加</button>
+                            <div className="flex justify-between items-center border-b pb-4 mb-6">
+                                <div>
+                                    <h3 className="font-bold text-xl flex items-center gap-2 text-gray-900">
+                                        <Trophy className="text-indigo-600"/> 結果ページ ({form.results.length}パターン)
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1">診断結果の内容を設定します</p>
+                                </div>
+                                <button onClick={addResult} className="text-sm bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-bold hover:bg-indigo-100 flex items-center gap-1 transition-all"><Plus size={16}/> 追加</button>
                             </div>
-                            <div className={`p-4 rounded-lg mb-6 text-sm ${form.mode==='test'?'bg-orange-50 text-orange-800':form.mode==='fortune'?'bg-purple-50 text-purple-800':'bg-blue-50 text-blue-800'}`}>
-                                {form.mode === 'test' ? "正解数に応じて結果が変わります" : form.mode === 'fortune' ? "結果はランダムに表示されます" : "獲得ポイントが多いタイプの結果が表示されます"}
+                            <div className={`p-4 rounded-lg mb-6 text-sm font-bold ${form.mode==='test'?'bg-orange-50 text-orange-800 border border-orange-200':form.mode==='fortune'?'bg-purple-50 text-purple-800 border border-purple-200':'bg-blue-50 text-blue-800 border border-blue-200'}`}>
+                                💡 {form.mode === 'test' ? "正解数に応じて結果が変わります" : form.mode === 'fortune' ? "結果はランダムに表示されます" : "獲得ポイントが多いタイプの結果が表示されます"}
                             </div>
                             {form.results.map((r, i)=>(
                                 <div key={i} className="bg-gray-50 p-6 rounded-xl border border-gray-200 relative overflow-hidden group">
@@ -687,6 +921,36 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                 </div>
                             ))}
                             <button onClick={addResult} className="w-full py-3 bg-gray-50 border-2 border-dashed border-gray-300 text-gray-500 rounded-xl font-bold hover:bg-gray-100 hover:border-gray-400 flex items-center justify-center gap-2"><Plus size={16}/> 結果パターンを追加する</button>
+                            
+                            {/* ナビゲーションボタン */}
+                            <div className="flex justify-between items-center pt-6 border-t">
+                                <button onClick={() => setCurrentStep(3)} className="px-6 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition-all flex items-center gap-2">
+                                    <ArrowLeft size={18}/> 戻る
+                                </button>
+                                <button 
+                                    onClick={async ()=>{
+                                        setIsSaving(true); 
+                                        const payload = {
+                                            title: form.title, description: form.description, category: form.category, color: form.color,
+                                            questions: form.questions, results: form.results, 
+                                            user_id: user?.id || null, layout: form.layout || 'card', image_url: form.image_url || null, mode: form.mode || 'diagnosis',
+                                            collect_email: form.collect_email || false,
+                                            regenerateSlug: regenerateSlug
+                                        };
+                                        const returnedId = await onSave(payload, savedId || initialData?.id);
+                                        if(returnedId) {
+                                            setSavedId(returnedId);
+                                            handlePublish();
+                                        }
+                                        setIsSaving(false);
+                                    }} 
+                                    disabled={isSaving} 
+                                    className="px-8 py-3 bg-green-600 text-white font-bold hover:bg-green-700 rounded-lg transition-all shadow-md flex items-center gap-2 text-lg"
+                                >
+                                    {isSaving ? <Loader2 className="animate-spin" size={20}/> : <CheckCircle size={20}/>} 
+                                    完成・公開する
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
