@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-// APIキーが読み込めているか確認（ログに出ます）
+// APIキーの確認ログ
 const apiKey = process.env.STRIPE_SECRET_KEY;
 if (!apiKey) {
   console.error("❌ Stripe API Key is missing!");
@@ -13,10 +13,8 @@ export async function POST(req) {
   try {
     const { quizId, quizTitle, userId, email } = await req.json();
     
-    // 戻り先URLを確実に取得する
+    // 戻り先URLの取得
     let origin = req.headers.get('origin');
-    
-    // もしOriginが取れない場合（サーバー設定による）、リファラーを使う
     if (!origin) {
         origin = req.headers.get('referer');
         if (origin) {
@@ -40,12 +38,8 @@ export async function POST(req) {
               name: `HTMLデータ提供: ${quizTitle}`,
               description: 'この診断クイズのHTMLデータをダウンロードします（寄付・応援）',
             },
-            custom_unit_amount: {
-              enabled: true,
-              minimum: 500, 
-              maximum: 50000,
-              preset: 1000,
-            },
+            // ★修正: 自由価格(custom_unit_amount)を廃止し、固定価格(unit_amount)に変更
+            unit_amount: 1000, 
           },
           quantity: 1,
         },
@@ -64,7 +58,6 @@ export async function POST(req) {
     return NextResponse.json({ url: session.url });
 
   } catch (err) {
-    // ここで詳細なエラーをログに出す
     console.error("🔥 Stripe Checkout Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
