@@ -644,11 +644,14 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                     </div>
                 </div>
 
+                {/* 使い方リンク */}
+                <div className="p-4 border-b">
+                    <button onClick={()=>setPage('howto')} className="w-full px-3 py-2 text-left text-xs text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-lg flex items-center gap-2 transition-all">
+                        <BookOpen size={14}/> 使い方・規約を見る
+                    </button>
+                </div>
+
                 <div className="flex-grow"></div>
-                
-                <button onClick={()=>setPage('howto')} className="w-full px-4 py-3 text-left text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-2 border-t">
-                    <BookOpen size={14}/> 使い方・規約を見る
-                </button>
             </div>
             )}
 
@@ -838,10 +841,27 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-bold text-gray-900 block mb-2">テーマカラー</label>
-                                    <div className="flex gap-3 flex-wrap">
-                                        {['bg-indigo-600', 'bg-pink-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500', 'bg-gray-800'].map(c => (
-                                            <button key={c} onClick={()=>setForm({...form, color:c})} className={`w-8 h-8 rounded-full ${c} ${form.color===c ? 'ring-4 ring-offset-2 ring-gray-300':''}`}></button>
+                                    <label className="text-sm font-bold text-gray-900 block mb-2">デザインテーマ</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { name: 'モダン', color: 'bg-indigo-600', desc: 'スタイリッシュ' },
+                                            { name: '和風', color: 'bg-red-700', desc: '伝統的' },
+                                            { name: 'パステル', color: 'bg-pink-300', desc: '優しい' },
+                                            { name: 'サイバー', color: 'bg-cyan-500', desc: '未来的' },
+                                            { name: 'ナチュラル', color: 'bg-green-600', desc: '自然' },
+                                            { name: 'ダーク', color: 'bg-gray-900', desc: 'クール' }
+                                        ].map(theme => (
+                                            <button 
+                                                key={theme.name} 
+                                                onClick={()=>setForm({...form, color:theme.color, theme: theme.name})} 
+                                                className={`p-3 rounded-lg border-2 text-left transition-all ${form.color===theme.color ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                                            >
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className={`w-4 h-4 rounded-full ${theme.color}`}></div>
+                                                    <span className="font-bold text-sm">{theme.name}</span>
+                                                </div>
+                                                <span className="text-xs text-gray-500">{theme.desc}</span>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>

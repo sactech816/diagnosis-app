@@ -9,6 +9,10 @@ import { supabase } from '../lib/supabase';
 
 const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCreate, setPage, isAdmin }) => {
     
+    useEffect(() => { 
+        document.title = "診断クイズメーカー | 無料で診断・性格テスト・心理テストを作成・公開"; 
+    }, []);
+    
     // ★追加: ローカルで表示・更新するためのステート
     const [localQuizzes, setLocalQuizzes] = useState([]);
     
@@ -97,11 +101,54 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                     </div>
                 </div>
 
+                {/* 人気ランキング */}
+                <div className="max-w-6xl mx-auto py-16 px-4">
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-2 mb-2">
+                            <TrendingUp className="text-red-500"/> 人気ランキング
+                        </h2>
+                        <p className="text-gray-500">今週最も遊ばれている診断</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {[...localQuizzes]
+                            .sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
+                            .slice(0, 3)
+                            .map((quiz, index) => (
+                                <div 
+                                    key={quiz.id} 
+                                    onClick={() => onPlay(quiz)}
+                                    className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all cursor-pointer overflow-hidden border-2 border-transparent hover:border-indigo-500 relative"
+                                >
+                                    <div className={`absolute top-3 left-3 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-lg z-10 ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : 'bg-gradient-to-br from-orange-400 to-orange-600'}`}>
+                                        {index + 1}
+                                    </div>
+                                    {quiz.image_url && (
+                                        <img src={quiz.image_url} alt="" className="w-full h-40 object-cover"/>
+                                    )}
+                                    <div className="p-5">
+                                        <h3 className="font-bold text-lg mb-2 line-clamp-2">{quiz.title}</h3>
+                                        <p className="text-sm text-gray-600 line-clamp-2 mb-3">{quiz.description}</p>
+                                        <div className="flex items-center justify-between text-xs text-gray-500">
+                                            <span className="flex items-center gap-1">
+                                                <Play size={14}/> {quiz.views_count || 0}回
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Heart size={14} className="text-red-500"/> {quiz.likes_count || 0}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        }
+                    </div>
+                </div>
+
                 {/* クイズ一覧 */}
-                <div id="quiz-list-top" className="max-w-6xl mx-auto py-16 px-4">
-                    <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 border-b border-gray-100 pb-4">
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <div id="quiz-list-top" className="max-w-6xl mx-auto py-16 px-4 border-t border-gray-100">
+                    <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-8 gap-4 border-b border-gray-100 pb-4">
+                        <div className="text-center md:text-left">
+                            <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-center md:justify-start gap-2">
                                 <Zap className="text-yellow-500"/> 診断クイズ一覧
                             </h2>
                             <p className="text-gray-500 text-sm mt-1">気になる診断をプレイしてみましょう</p>
