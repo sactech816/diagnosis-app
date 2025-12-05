@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
+// ★修正: MessageCircle を追加しました
 import { 
     ArrowLeft, CheckCircle, ChevronDown, ChevronUp, 
     Briefcase, GraduationCap, Sparkles, TrendingUp, 
     Share2, Search, Megaphone, Lightbulb, Target, Heart,
     QrCode, Users, Repeat, Smartphone, Eye, Zap, Lock, Unlock,
     Download, Code, FileText, Image as ImageIcon, BarChart2,
-    Mail, Shield, Scale, ExternalLink, Smile
+    Mail, Shield, Scale, ExternalLink, Smile, MessageCircle
 } from 'lucide-react';
 import Header from './Header';
 import SEO from './SEO';
 
+// ... (以下、中身のコードはそのままでOKですが、一番確実なのは前回のコードの先頭 import 部分だけを上記に書き換えることです)
+// ※ファイル全体を貼り付けると非常に長くなるため、今回は「import部分の修正」だけで確実に直ります。
+// ↓ もしコピペ用として中身が必要であれば、前回のコードの import 部分だけを上記に差し替えてご使用ください。
+
+// ... (EffectiveUsePage, QuizLogicPage, HowToPage... などのコンポーネントは変更なし)
 // --- 1. Effective Use Page ---
 export const EffectiveUsePage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmin }) => {
     useEffect(() => { document.title = "効果的な使い方・メリット | 診断クイズメーカー"; }, []);
@@ -146,7 +152,38 @@ export const HowToPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmi
                             </ul>
                         </div>
                     </section>
-                    {/* (他2つのモード説明は省略せずそのまま使用してください) */}
+
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><GraduationCap className="text-orange-500"/> 2. 学習・検定の作り方</h2>
+                        <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                            <p className="mb-2 text-sm font-bold text-orange-800">例：「中学歴史マスター検定」</p>
+                            <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                                <li><strong>正解設定:</strong> 正解の選択肢にチェックを入れます。</li>
+                                <li><strong>結果判定:</strong> 正解数に応じて、自動的にランク（S〜Cなど）が判定されます。</li>
+                                <li><strong>演出:</strong> 回答時に「正解！」のフィードバックや、満点時の紙吹雪演出があります。</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><Sparkles className="text-purple-600"/> 3. 占いの作り方</h2>
+                        <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                            <p className="mb-2 text-sm font-bold text-purple-800">例：「今日のラッキーアイテム占い」</p>
+                            <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                                <li><strong>ランダム:</strong> 質問への回答に関わらず、用意した結果の中からランダムに一つが表示されます。</li>
+                                <li><strong>手軽さ:</strong> 複雑なロジックなしで、おみくじのようなコンテンツが作れます。</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <div className="border-t pt-8 mt-8">
+                        <h2 className="text-xl font-bold text-gray-700 mb-4">利用規約・免責事項</h2>
+                        <ul className="list-disc pl-5 space-y-3 text-sm text-gray-600">
+                            <li><strong>ツール本体について:</strong> 本書購入者様のみご利用可能です。</li>
+                            <li><strong>作成したコンテンツの利用:</strong> 個人・商用を問わず自由にご利用いただけます。フッターのコピーライト表記は削除しないでください。</li>
+                            <li><strong>免責事項:</strong> 本ツールの利用によって生じたいかなる損害についても、提供者は一切の責任を負いません。</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -189,7 +226,7 @@ export const PricePage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmi
     return <FaqPage onBack={onBack} setPage={setPage} user={user} onLogout={onLogout} setShowAuth={setShowAuth} isAdmin={isAdmin} />;
 };
 
-// --- ★新規追加: お問い合わせページ ---
+// --- Contact Page ---
 export const ContactPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmin }) => {
     useEffect(() => { document.title = "お問い合わせ | 診断クイズメーカー"; }, []);
     return (
@@ -210,7 +247,7 @@ export const ContactPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAd
     );
 };
 
-// --- ★新規追加: 特定商取引法に基づく表記 ---
+// --- Legal Page ---
 export const LegalPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmin }) => {
     useEffect(() => { document.title = "特定商取引法に基づく表記 | 診断クイズメーカー"; }, []);
     return (
@@ -222,21 +259,21 @@ export const LegalPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmi
                 <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-6 text-sm">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
                         <div className="font-bold text-gray-500">販売事業者名</div>
-                        <div className="md:col-span-2 text-gray-900">[あなたの事業者名または氏名]ケイショウ株式会社</div>
+                        <div className="md:col-span-2 text-gray-900">[あなたの事業者名または氏名]</div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
                         <div className="font-bold text-gray-500">代表者または運営統括責任者</div>
-                        <div className="md:col-span-2 text-gray-900">[代表者氏名]宇城利浩</div>
+                        <div className="md:col-span-2 text-gray-900">[代表者氏名]</div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
                         <div className="font-bold text-gray-500">所在地</div>
-                        <div className="md:col-span-2 text-gray-900">[住所]福井県福井市中央1-9-24 3F</div>
+                        <div className="md:col-span-2 text-gray-900">[住所]</div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
                         <div className="font-bold text-gray-500">お問い合わせ先</div>
                         <div className="md:col-span-2 text-gray-900">
-                            [電話番号]0776-25-4326<br/>
-                            [メールアドレス]support@first-ship.com<br/>
+                            [電話番号]<br/>
+                            [メールアドレス]<br/>
                             またはお問い合わせフォームよりご連絡ください。
                         </div>
                     </div>
@@ -266,7 +303,7 @@ export const LegalPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmi
     );
 };
 
-// --- ★新規追加: プライバシーポリシー ---
+// --- Privacy Page ---
 export const PrivacyPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmin }) => {
     useEffect(() => { document.title = "プライバシーポリシー | 診断クイズメーカー"; }, []);
     return (

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+// ★修正: Mail を追加
 import { 
     Edit3, MessageSquare, Trophy, Loader2, Save, Share2, 
     Sparkles, Wand2, BookOpen, Image as ImageIcon, 
     Layout, MessageCircle, ArrowLeft, Briefcase, GraduationCap, 
-    CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode, UploadCloud
+    CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode, UploadCloud, Mail, FileText
 } from 'lucide-react';
 import { generateSlug } from '../lib/utils';
 import { supabase } from '../lib/supabase';
@@ -54,27 +55,75 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       results: [ {type:"A", title:"結果A", description:"説明...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}, {type:"B", title:"結果B", description:"...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}, {type:"C", title:"結果C", description:"...", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""} ]
   };
 
-  // ★修正: データの欠損を防ぐ初期化ロジック
+  // データの自動修復機能付き初期化
   const [form, setForm] = useState(() => {
       if (!initialData) return defaultForm;
-      
-      // 既存データ(initialData)に、新機能用のフィールド(link_url等)が無くてもエラーにならないよう補完
       return {
-          ...defaultForm, // デフォルト値を下敷きにする
-          ...initialData, // DBからの値を上書きする
-          // 特に結果(results)の中身を1つずつチェックして補完
+          ...defaultForm, 
+          ...initialData, 
           results: initialData.results?.map(r => ({
-              link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: "", // デフォルト値
-              ...r // DBの値があれば上書き
+              link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: "", 
+              ...r 
           })) || defaultForm.results
       };
   });
 
+  // ★追加: プリセット適用機能
+  const applyPreset = (type) => {
+      if(!confirm('現在の入力内容は上書きされます。よろしいですか？')) return;
+      
+      let presetData = { ...defaultForm };
+      
+      if (type === 'shindan') {
+          presetData = {
+              ...presetData,
+              title: "あなたの○○タイプ診断",
+              description: "性格や行動パターンから、あなたにぴったりのタイプを診断します。",
+              mode: 'diagnosis',
+              category: 'Business',
+              color: 'bg-blue-500',
+              results: [
+                  {type: "A", title: "リーダータイプ", description: "あなたは人を引っ張るのが得意なリーダータイプです。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""},
+                  {type: "B", title: "サポータータイプ", description: "あなたは縁の下の力持ちとして活躍するタイプです。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""},
+                  {type: "C", title: "クリエイタータイプ", description: "あなたは独創的なアイデアを生み出すタイプです。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}
+              ]
+          };
+      } else if (type === 'test') {
+          presetData = {
+              ...presetData,
+              title: "○○検定！あなたの知識レベルは？",
+              description: "全5問のクイズに答えて、あなたの知識レベルをチェックしましょう。",
+              mode: 'test',
+              category: 'Education',
+              color: 'bg-green-500',
+              results: [
+                  {type: "A", title: "Sランク：マスター級", description: "素晴らしい！完璧な知識を持っています。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""},
+                  {type: "B", title: "Aランク：上級者", description: "かなり詳しいですね！あと一歩で満点です。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""},
+                  {type: "C", title: "Bランク：勉強中", description: "基本は理解できています。復習して再挑戦しましょう。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}
+              ]
+          };
+      } else if (type === 'fortune') {
+          presetData = {
+              ...presetData,
+              title: "今日の運勢占い",
+              description: "直感で答えてください。今日のあなたの運勢を占います。",
+              mode: 'fortune',
+              category: 'Fortune',
+              color: 'bg-purple-500',
+              results: [
+                  {type: "A", title: "大吉", description: "最高の一日になりそう！新しいことに挑戦すると吉。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""},
+                  {type: "B", title: "中吉", description: "穏やかな一日です。リラックスして過ごしましょう。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""},
+                  {type: "C", title: "小吉", description: "忘れ物に注意。足元を固めると良いでしょう。", link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:""}
+              ]
+          };
+      }
+      setForm(presetData);
+      setActiveTab('基本設定');
+  };
+
   const switchMode = (newMode) => {
       let newResults = form.results;
       let newCategory = "Business";
-
-      // テンプレート定義
       const templateResult = { link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"" };
 
       if (newMode === 'test') {
@@ -203,7 +252,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
       try {
           let prompt = "";
           if (form.mode === 'test') {
-              prompt = `テーマ「${aiTheme}」の4択学習クイズを作成して。質問5つ。各質問で正解は1つだけ（scoreのAを1、他を0にする）。結果は高得点・中得点・低得点の3段階。`;
+              prompt = `テーマ「${aiTheme}」の4択学習クイズを作成して。質問5つ。各質問で正解は1つだけ（scoreのAを1、他を0にする）。結果は高・中・低得点の3段階。`;
           } else if (form.mode === 'fortune') {
               prompt = `テーマ「${aiTheme}」の占いを作成して。質問5つ（運勢には影響しない演出用）。結果は大吉・中吉・吉などの3パターン。`;
           } else {
@@ -220,7 +269,6 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
           const content = data.choices[0].message.content;
           const jsonStr = content.substring(content.indexOf('{'), content.lastIndexOf('}') + 1);
           const json = JSON.parse(jsonStr);
-          // AI生成データに既存フィールドをマージ
           setForm(prev => ({ 
               ...prev, ...json,
               results: json.results.map(r => ({link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"", ...r}))
@@ -277,7 +325,18 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
         </div>
         
         <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
+            {/* Sidebar */}
             <div className="bg-white border-b md:border-b-0 md:border-r flex flex-col w-full md:w-64 shrink-0">
+                {/* ★追加: テンプレート選択 */}
+                <div className="p-4 bg-gray-50 border-b">
+                    <p className="text-xs font-bold text-gray-500 mb-2 flex items-center gap-1"><FileText size={12}/> テンプレートから作る</p>
+                    <div className="grid grid-cols-3 gap-2">
+                        <button onClick={()=>applyPreset('shindan')} className="text-[10px] font-bold bg-white border border-gray-200 py-2 rounded hover:bg-blue-50 text-blue-600">診断</button>
+                        <button onClick={()=>applyPreset('test')} className="text-[10px] font-bold bg-white border border-gray-200 py-2 rounded hover:bg-green-50 text-green-600">検定</button>
+                        <button onClick={()=>applyPreset('fortune')} className="text-[10px] font-bold bg-white border border-gray-200 py-2 rounded hover:bg-purple-50 text-purple-600">占い</button>
+                    </div>
+                </div>
+
                 <div className="p-4 bg-gradient-to-b from-purple-50 to-white border-b">
                     <div className="flex items-center gap-2 mb-2 text-purple-700 font-bold text-sm">
                         <Sparkles size={16}/> AI自動生成
@@ -307,11 +366,13 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                 </div>
             </div>
 
+            {/* Main Content */}
             <div className="flex-grow p-4 md:p-8 overflow-y-auto bg-gray-50">
                 <div className="max-w-3xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-gray-100 min-h-[500px]">
                     {activeTab === '基本設定' && (
                         <div className="animate-fade-in">
                             <h3 className="font-bold text-xl mb-6 border-b pb-2 flex items-center gap-2 text-gray-900"><Edit3 className="text-gray-400"/> 基本設定</h3>
+                            
                             {!initialData && (
                                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
                                     <label className="text-sm font-bold text-gray-900 block mb-3">作成する種類を選択</label>
@@ -395,7 +456,6 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                             <span>選択肢</span>
                                             <button onClick={()=>addOption(i)} className="text-xs bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 flex items-center gap-1"><Plus size={12}/> 追加</button>
                                         </div>
-                                        
                                         <div className="flex text-xs text-gray-400 px-2 mt-2">
                                             <span className="flex-grow"></span>
                                             {form.mode === 'test' ? <span className="w-16 text-center text-orange-500 font-bold">正解</span> 
@@ -407,7 +467,6 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                               </div>
                                             }
                                         </div>
-
                                         {q.options.map((o, j)=>(
                                             <div key={j} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
                                                 <button onClick={()=>removeOption(i, j)} className="text-gray-300 hover:text-red-500"><Trash2 size={14}/></button>
@@ -443,11 +502,9 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                 <h3 className="font-bold text-xl flex items-center gap-2 text-gray-900"><Trophy className="text-gray-400"/> 結果パターン ({form.results.length})</h3>
                                 <button onClick={addResult} className="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-bold hover:bg-indigo-100 flex items-center gap-1"><Plus size={14}/> 追加</button>
                             </div>
-                            
                             <div className={`p-4 rounded-lg mb-6 text-sm ${form.mode==='test'?'bg-orange-50 text-orange-800':form.mode==='fortune'?'bg-purple-50 text-purple-800':'bg-blue-50 text-blue-800'}`}>
                                 {form.mode === 'test' ? "正解数に応じて結果が変わります" : form.mode === 'fortune' ? "結果はランダムに表示されます" : "獲得ポイントが多いタイプの結果が表示されます"}
                             </div>
-                            
                             {form.results.map((r, i)=>(
                                 <div key={i} className="bg-gray-50 p-6 rounded-xl border border-gray-200 relative overflow-hidden group">
                                     <button onClick={()=>removeResult(i)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500 p-1 z-10"><Trash2 size={16}/></button>
@@ -456,7 +513,6 @@ const Editor = ({ onBack, onSave, initialData, setPage, user }) => {
                                     </div>
                                     <Input label="タイトル" val={r.title} onChange={v=>{const n=[...form.results];n[i].title=v;setForm({...form, results:n})}} />
                                     <Textarea label="結果の説明文" val={r.description} onChange={v=>{const n=[...form.results];n[i].description=v;setForm({...form, results:n})}}/>
-                                    
                                     <div className="bg-white p-4 rounded-xl border border-gray-200 mt-4">
                                         <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2"><Link size={14}/> 誘導ボタン設定 (任意)</p>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
