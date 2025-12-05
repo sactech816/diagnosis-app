@@ -39,6 +39,7 @@ export async function POST(req) {
               description: 'この診断クイズのHTMLデータをダウンロードします（寄付・応援）',
             },
             // ★修正: 自由価格(custom_unit_amount)を廃止し、固定価格(unit_amount)に変更
+            // unit_amount は「円」ではなく「銭」等の最小単位も考慮されますが、日本円(jpy)の場合はそのまま「円」です。
             unit_amount: 1000, 
           },
           quantity: 1,
