@@ -50,6 +50,25 @@ const App = () => {
               // URLハッシュフラグメントをチェック（パスワードリセット用）
               const hash = window.location.hash;
               
+              // 認証状態の変更を監視（最初に設定）
+              supabase.auth.onAuthStateChange((event, session) => {
+                setUser(session?.user || null);
+                
+                // パスワードリセット後のセッション変更を検知
+                const currentHash = window.location.hash;
+                if (currentHash && currentHash.includes('type=recovery')) {
+                    if (session?.user) {
+                        // パスワード変更画面を表示
+                        setShowPasswordReset(true);
+                        setView('portal');
+                        window.history.replaceState(null, '', window.location.pathname);
+                    }
+                }
+              });
+              
+              // URLハッシュフラグメントをチェック（パスワードリセット用）
+              const hash = window.location.hash;
+              
               // パスワードリセットリンクから来た場合の処理
               if (hash && hash.includes('type=recovery')) {
                   // まずポータルページを表示
@@ -81,28 +100,12 @@ const App = () => {
                           alert('パスワードリセット処理中にエラーが発生しました。');
                           window.history.replaceState(null, '', window.location.pathname);
                       }
-                  }, 500);
+                  }, 1000);
               } else {
                   // 通常のセッション確認
                   const {data:{session}} = await supabase.auth.getSession();
                   setUser(session?.user||null);
               }
-              
-              // 認証状態の変更を監視
-              supabase.auth.onAuthStateChange((event, session) => {
-                setUser(session?.user || null);
-                
-                // パスワードリセット後のセッション変更を検知
-                const currentHash = window.location.hash;
-                if (currentHash && currentHash.includes('type=recovery')) {
-                    if (session?.user) {
-                        // パスワード変更画面を表示
-                        setShowPasswordReset(true);
-                        setView('portal');
-                        window.history.replaceState(null, '', window.location.pathname);
-                    }
-                }
-              });
           }
 
           // URLパラメータのチェック
