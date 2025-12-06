@@ -27,6 +27,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   // 管理者かどうかを判定（複数のメールアドレスに対応）
   const adminEmails = getAdminEmails();
@@ -46,10 +47,41 @@ const App = () => {
       const init = async () => {
           // ユーザーセッションの確認
           if(supabase) {
-              const {data:{session}} = await supabase.auth.getSession();
-              setUser(session?.user||null);
+              // URLハッシュフラグメントをチェック（パスワードリセット用）
+              const hashParams = new URLSearchParams(window.location.hash.substring(1));
+              const type = hashParams.get('type');
+              
+              if (type === 'recovery') {
+                  // パスワードリセットリンクから来た場合
+                  // Supabaseが自動的にセッションを確立するので、セッションを確認
+                  const {data:{session}} = await supabase.auth.getSession();
+                  
+                  if (session?.user) {
+                      // セッションが確立されている場合、パスワード変更画面を表示
+                      setUser(session.user);
+                      setShowPasswordReset(true);
+                      setView('portal');
+                      // ハッシュをクリア
+                      window.history.replaceState(null, '', window.location.pathname);
+                  } else {
+                      // セッションが確立されていない場合、エラー
+                      alert('パスワードリセットリンクが無効または期限切れです。');
+                      window.history.replaceState(null, '', window.location.pathname);
+                      setView('portal');
+                  }
+              } else {
+                  // 通常のセッション確認
+                  const {data:{session}} = await supabase.auth.getSession();
+                  setUser(session?.user||null);
+              }
+              
               supabase.auth.onAuthStateChange((_event, session) => {
                 setUser(session?.user || null);
+                // パスワードリセット後のセッション変更を検知
+                if (session?.user && window.location.hash.includes('type=recovery')) {
+                    setShowPasswordReset(true);
+                    window.history.replaceState(null, '', window.location.pathname);
+                }
               });
           }
 
@@ -207,7 +239,7 @@ const App = () => {
           `}
         </Script>
         
-        <AuthModal isOpen={showAuth} onClose={()=>setShowAuth(false)} setUser={setUser} />
+        <AuthModal isOpen={showAuth} onClose={()=>setShowAuth(false)} setUser={setUser} isPasswordReset={showPasswordReset} />
         
         {view === 'portal' && (
             <Portal 

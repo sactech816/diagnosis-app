@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const AuthModal = ({ isOpen, onClose, setUser }) => {
+const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [isResetMode, setIsResetMode] = useState(false);
+    const [isChangePasswordMode, setIsChangePasswordMode] = useState(isPasswordReset);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [resetSent, setResetSent] = useState(false);
     
-    if (!isOpen) return null;
+    if (!isOpen && !isPasswordReset) return null;
     
     const handleAuth = async (e) => {
         e.preventDefault(); setLoading(true);
@@ -43,7 +46,7 @@ const AuthModal = ({ isOpen, onClose, setUser }) => {
         setLoading(true);
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: typeof window !== 'undefined' ? `${window.location.origin}?reset=true` : undefined,
+                redirectTo: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
             });
             if (error) throw error;
             setResetSent(true);
@@ -54,7 +57,76 @@ const AuthModal = ({ isOpen, onClose, setUser }) => {
         }
     };
 
-    // パスワードリセットモード
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        if (!newPassword || !confirmPassword) {
+            alert('新しいパスワードを入力してください。');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            alert('パスワードが一致しません。');
+            return;
+        }
+        if (newPassword.length < 6) {
+            alert('パスワードは6文字以上で入力してください。');
+            return;
+        }
+        setLoading(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+            if (error) throw error;
+            alert('パスワードを変更しました。ログインしてください。');
+            setIsChangePasswordMode(false);
+            setNewPassword('');
+            setConfirmPassword('');
+            if (onClose) onClose();
+        } catch (e) {
+            alert('エラー: ' + e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // パスワード変更モード（メールリンクから来た場合）
+    if (isChangePasswordMode) {
+        return (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl relative animate-fade-in">
+                    <h2 className="text-xl font-bold mb-6 text-center text-gray-900">新しいパスワードを設定</h2>
+                    <form onSubmit={handlePasswordChange} className="space-y-4">
+                        <p className="text-sm text-gray-600 mb-4">
+                            新しいパスワードを入力してください。
+                        </p>
+                        <input 
+                            type="password" 
+                            required 
+                            value={newPassword} 
+                            onChange={e=>setNewPassword(e.target.value)} 
+                            className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900" 
+                            placeholder="新しいパスワード" 
+                            minLength={6}
+                        />
+                        <input 
+                            type="password" 
+                            required 
+                            value={confirmPassword} 
+                            onChange={e=>setConfirmPassword(e.target.value)} 
+                            className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900" 
+                            placeholder="パスワード（確認）" 
+                            minLength={6}
+                        />
+                        <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors">
+                            {loading ? '処理中...' : 'パスワードを変更'}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    // パスワードリセットメール送信モード
     if (isResetMode) {
         return (
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
