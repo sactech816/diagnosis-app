@@ -26,19 +26,20 @@ body {
 }
 
 /* グラデーション背景の縦方向アニメーション */
+/* 参考: https://animate-club.com/background/css_gradation/ */
 @keyframes gradient-shift {
   0% {
-    background-position: 50% 0%;
+    background-position: 0% 0%;
   }
   50% {
-    background-position: 50% 100%;
+    background-position: 0% 100%;
   }
   100% {
-    background-position: 50% 0%;
+    background-position: 0% 0%;
   }
 }
 
 .animate-gradient-vertical {
-  background-size: 200% 200%;
-  animation: gradient-shift 5s ease infinite;
+  background-size: 100% 200%;
+  animation: gradient-shift 8s ease-in-out infinite;
 }
