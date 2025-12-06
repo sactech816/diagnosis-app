@@ -125,7 +125,11 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                 )}
 
                 {/* ヒーロー */}
-                <div className="bg-gradient-to-br from-indigo-900 via-purple-800 to-indigo-900 text-white pt-20 pb-24 px-4 relative overflow-hidden">
+                <div className="text-white pt-20 pb-24 px-4 relative overflow-hidden">
+                    <div className="absolute inset-0 animate-gradient-vertical" style={{
+                        background: 'linear-gradient(to bottom, #312e81 0%, #6b21a8 50%, #312e81 100%)',
+                        backgroundSize: '100% 200%'
+                    }}></div>
                     <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
                     <div className="max-w-4xl mx-auto text-center relative z-10">
                         <div className="inline-block bg-indigo-500/30 border border-indigo-400/30 px-4 py-1 rounded-full text-xs font-bold mb-6 animate-fade-in-up">
