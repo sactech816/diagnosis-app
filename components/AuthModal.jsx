@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -12,6 +12,11 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false }) => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [resetSent, setResetSent] = useState(false);
+    
+    // isPasswordResetが変更されたときにisChangePasswordModeを更新
+    useEffect(() => {
+        setIsChangePasswordMode(isPasswordReset);
+    }, [isPasswordReset]);
     
     if (!isOpen && !isPasswordReset) return null;
     
