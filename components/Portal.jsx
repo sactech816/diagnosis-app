@@ -345,20 +345,6 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
 
 export default Portal;
 
-                            ))
-
-                        }
-
-                    </div>
-
-                </div>
-
-
-
-                {/* クイズ一覧 */}
-
-                <div id="quiz-list-top" className="max-w-6xl mx-auto py-16 px-4 border-t border-gray-100">
-
                     <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-8 gap-4 border-b border-gray-100 pb-4">
 
                         <div className="text-center md:text-left">
