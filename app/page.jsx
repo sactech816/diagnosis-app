@@ -47,9 +47,6 @@ const App = () => {
       const init = async () => {
           // ユーザーセッションの確認
           if(supabase) {
-              // URLハッシュフラグメントをチェック（パスワードリセット用）
-              const hash = window.location.hash;
-              
               // 認証状態の変更を監視（最初に設定）
               supabase.auth.onAuthStateChange((event, session) => {
                 setUser(session?.user || null);
