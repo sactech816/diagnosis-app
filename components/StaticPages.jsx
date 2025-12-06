@@ -476,6 +476,7 @@ export const LegalPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmi
                     </div>
                 </div>
             </div>
+            <Footer setPage={setPage} onCreate={()=>setPage('editor')} user={user} setShowAuth={setShowAuth} />
         </div>
     );
 };

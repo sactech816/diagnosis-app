@@ -227,7 +227,10 @@ const Textarea = ({label, val, onChange}) => (
 );
 
 const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth }) => {
-  useEffect(() => { document.title = "クイズ作成・編集 | 診断クイズメーカー"; }, []);
+  useEffect(() => { 
+    document.title = "クイズ作成・編集 | 診断クイズメーカー"; 
+    window.scrollTo(0, 0);
+  }, []);
   const [currentStep, setCurrentStep] = useState(initialData ? 2 : 1); // 編集時はステップ2から
   const [isSaving, setIsSaving] = useState(false);
   const [savedId, setSavedId] = useState(null);
