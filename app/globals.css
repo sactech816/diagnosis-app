@@ -39,5 +39,5 @@ body {
 }
 
 .animate-gradient-rainbow {
-  animation: gradient-rainbow 12s infinite alternate;
+  animation: gradient-rainbow 20s infinite alternate;
 }
