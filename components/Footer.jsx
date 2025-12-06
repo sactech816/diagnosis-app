@@ -34,15 +34,16 @@ const Footer = ({ setPage, onCreate, user, setShowAuth }) => {
                     </ul>
                 </div>
 
-                <div>
-                    <h3 className="text-white font-bold mb-4 border-b border-gray-700 pb-2 inline-block">サポート・規約</h3>
-                    <ul className="space-y-3 text-sm">
-                        <li><button onClick={()=>setPage('faq')} className="hover:text-white transition-colors">よくある質問</button></li>
-                        <li><button onClick={()=>setPage('contact')} className="hover:text-white transition-colors">お問い合わせ</button></li>
-                        <li><button onClick={()=>setPage('legal')} className="hover:text-white transition-colors">特定商取引法に基づく表記</button></li>
-                        <li><button onClick={()=>setPage('privacy')} className="hover:text-white transition-colors">プライバシーポリシー</button></li>
-                    </ul>
-                </div>
+                    <div>
+                        <h3 className="text-white font-bold mb-4 border-b border-gray-700 pb-2 inline-block">サポート・規約</h3>
+                        <ul className="space-y-3 text-sm">
+                            <li><button onClick={()=>setPage('announcements')} className="hover:text-white transition-colors">お知らせ</button></li>
+                            <li><button onClick={()=>setPage('faq')} className="hover:text-white transition-colors">よくある質問</button></li>
+                            <li><button onClick={()=>setPage('contact')} className="hover:text-white transition-colors">お問い合わせ</button></li>
+                            <li><button onClick={()=>setPage('legal')} className="hover:text-white transition-colors">特定商取引法に基づく表記</button></li>
+                            <li><button onClick={()=>setPage('privacy')} className="hover:text-white transition-colors">プライバシーポリシー</button></li>
+                        </ul>
+                    </div>
             </div>
             
             <div className="max-w-6xl mx-auto px-4 mt-12 pt-8 border-t border-gray-800 text-center text-xs opacity-60">

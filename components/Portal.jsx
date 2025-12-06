@@ -12,16 +12,40 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
     useEffect(() => { 
         document.title = "診断クイズメーカー | 無料で診断・性格テスト・心理テストを作成・公開"; 
         window.scrollTo(0, 0);
+        fetchLatestAnnouncement();
     }, []);
     
     // ★追加: ローカルで表示・更新するためのステート
     const [localQuizzes, setLocalQuizzes] = useState([]);
+    const [latestAnnouncement, setLatestAnnouncement] = useState(null);
     
     const [filter, setFilter] = useState('All');
     const [sortOrder, setSortOrder] = useState('newest');
     const [rankingSort, setRankingSort] = useState('views'); // 'views' or 'trending'
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 9;
+
+    // 最新のお知らせを取得
+    const fetchLatestAnnouncement = async () => {
+        if (!supabase) return;
+        try {
+            const { data, error } = await supabase
+                .from('announcements')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+            
+            if (error && error.code !== 'PGRST116') { // PGRST116は「データが見つからない」エラー
+                console.error('お知らせの取得エラー:', error);
+            } else if (data) {
+                setLatestAnnouncement(data);
+            }
+        } catch (e) {
+            console.error('お知らせの取得エラー:', e);
+        }
+    };
 
     // ★追加: 親(page.jsx)から新しいデータが来たら、ローカルデータを更新
     useEffect(() => {
@@ -82,6 +106,24 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
             <Header setPage={setPage} user={user} onLogout={onLogout} setShowAuth={setShowAuth} isAdmin={isAdmin} />
 
             <div className="flex-grow">
+                {/* 最新のお知らせバナー */}
+                {latestAnnouncement && (
+                    <div className="bg-indigo-600 text-white py-3 px-4 border-b border-indigo-700">
+                        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <span className="bg-indigo-700 px-2 py-1 rounded text-xs font-bold whitespace-nowrap">お知らせ</span>
+                                <span className="text-sm font-bold truncate">{latestAnnouncement.title}</span>
+                            </div>
+                            <button 
+                                onClick={() => setPage('announcements')}
+                                className="text-xs font-bold underline hover:text-indigo-200 whitespace-nowrap transition-colors"
+                            >
+                                詳細を見る
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* ヒーロー */}
                 <div className="bg-gradient-to-br from-indigo-900 via-purple-800 to-indigo-900 text-white pt-20 pb-24 px-4 relative overflow-hidden">
                     <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
