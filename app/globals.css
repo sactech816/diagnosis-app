@@ -28,17 +28,17 @@ body {
 /* グラデーション背景の縦方向アニメーション */
 @keyframes gradient-shift {
   0% {
-    background-position: 0% 0%;
+    background-position: 50% 0%;
   }
   50% {
-    background-position: 0% 100%;
+    background-position: 50% 100%;
   }
   100% {
-    background-position: 0% 0%;
+    background-position: 50% 0%;
   }
 }
 
 .animate-gradient-vertical {
-  background-size: 100% 200%;
-  animation: gradient-shift 10s ease-in-out infinite;
+  background-size: 200% 200%;
+  animation: gradient-shift 5s ease infinite;
 }

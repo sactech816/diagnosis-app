@@ -48,39 +48,59 @@ const App = () => {
           // ユーザーセッションの確認
           if(supabase) {
               // URLハッシュフラグメントをチェック（パスワードリセット用）
-              const hashParams = new URLSearchParams(window.location.hash.substring(1));
-              const type = hashParams.get('type');
+              const hash = window.location.hash;
               
-              if (type === 'recovery') {
-                  // パスワードリセットリンクから来た場合
-                  // Supabaseが自動的にセッションを確立するので、セッションを確認
-                  const {data:{session}} = await supabase.auth.getSession();
-                  
-                  if (session?.user) {
-                      // セッションが確立されている場合、パスワード変更画面を表示
-                      setUser(session.user);
-                      setShowPasswordReset(true);
-                      setView('portal');
-                      // ハッシュをクリア
-                      window.history.replaceState(null, '', window.location.pathname);
-                  } else {
-                      // セッションが確立されていない場合、エラー
-                      alert('パスワードリセットリンクが無効または期限切れです。');
-                      window.history.replaceState(null, '', window.location.pathname);
-                      setView('portal');
-                  }
+              // パスワードリセットリンクから来た場合の処理
+              if (hash && hash.includes('type=recovery')) {
+                  // Supabaseが自動的にハッシュからトークンを処理するため、
+                  // getSession()を呼び出すだけでセッションが確立される
+                  // 少し待ってからセッションを確認（Supabaseがハッシュを処理する時間を確保）
+                  setTimeout(async () => {
+                      try {
+                          const {data:{session}, error} = await supabase.auth.getSession();
+                          
+                          if (error) {
+                              console.error('パスワードリセットセッションエラー:', error);
+                              alert('パスワードリセットリンクが無効または期限切れです。');
+                              window.history.replaceState(null, '', window.location.pathname);
+                              setView('portal');
+                          } else if (session?.user) {
+                              // セッションが確立されている場合、パスワード変更画面を表示
+                              setUser(session.user);
+                              setShowPasswordReset(true);
+                              setView('portal');
+                              // ハッシュをクリア
+                              window.history.replaceState(null, '', window.location.pathname);
+                          } else {
+                              // セッションが確立されていない場合
+                              alert('パスワードリセットリンクが無効または期限切れです。');
+                              window.history.replaceState(null, '', window.location.pathname);
+                              setView('portal');
+                          }
+                      } catch (e) {
+                          console.error('パスワードリセット処理エラー:', e);
+                          alert('パスワードリセット処理中にエラーが発生しました。');
+                          window.history.replaceState(null, '', window.location.pathname);
+                          setView('portal');
+                      }
+                  }, 100);
               } else {
                   // 通常のセッション確認
                   const {data:{session}} = await supabase.auth.getSession();
                   setUser(session?.user||null);
               }
               
-              supabase.auth.onAuthStateChange((_event, session) => {
+              // 認証状態の変更を監視
+              supabase.auth.onAuthStateChange((event, session) => {
                 setUser(session?.user || null);
+                
                 // パスワードリセット後のセッション変更を検知
-                if (session?.user && window.location.hash.includes('type=recovery')) {
-                    setShowPasswordReset(true);
-                    window.history.replaceState(null, '', window.location.pathname);
+                const hash = window.location.hash;
+                if (hash && hash.includes('type=recovery')) {
+                    if (session?.user) {
+                        setShowPasswordReset(true);
+                        window.history.replaceState(null, '', window.location.pathname);
+                    }
                 }
               });
           }

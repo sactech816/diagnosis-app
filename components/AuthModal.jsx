@@ -45,8 +45,12 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false }) => {
         }
         setLoading(true);
         try {
+            const redirectUrl = typeof window !== 'undefined' 
+                ? `${window.location.origin}${window.location.pathname}` 
+                : undefined;
+            
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
+                redirectTo: redirectUrl,
             });
             if (error) throw error;
             setResetSent(true);
