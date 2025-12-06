@@ -126,9 +126,8 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
 
                 {/* ヒーロー */}
                 <div className="text-white pt-20 pb-24 px-4 relative overflow-hidden">
-                    <div className="absolute inset-0 animate-gradient-rainbow" style={{
-                        background: 'linear-gradient(150deg, #a6d900 0%, #ff4454 100%)',
-                        opacity: 0.5
+                    <div className="absolute inset-0 animate-gradient-pulse" style={{
+                        background: 'linear-gradient(to bottom, #312e81, #6b21a8, #312e81)'
                     }}></div>
                     <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
                     <div className="max-w-4xl mx-auto text-center relative z-10">
