@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ExternalLink, Calendar } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Calendar, Plus, X, Bell, Edit3, Trash2 } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 import { supabase } from '../lib/supabase';
@@ -7,6 +7,15 @@ import { supabase } from '../lib/supabase';
 const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAuth }) => {
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+    const [editingAnnouncement, setEditingAnnouncement] = useState(null);
+    const [announcementForm, setAnnouncementForm] = useState({
+        title: '',
+        content: '',
+        link_url: '',
+        link_text: '',
+        is_active: true
+    });
 
     useEffect(() => {
         document.title = "お知らせ | 診断クイズメーカー";
@@ -17,12 +26,12 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
     const fetchAnnouncements = async () => {
         if (!supabase) return;
         try {
-            const { data, error } = await supabase
-                .from('announcements')
-                .select('*')
-                .eq('is_active', true)
-                .order('created_at', { ascending: false });
+            // 管理者の場合はすべてのお知らせを取得（非表示も含む）、一般ユーザーは表示中のみ
+            const query = isAdmin
+                ? supabase.from('announcements').select('*').order('created_at', { ascending: false })
+                : supabase.from('announcements').select('*').eq('is_active', true).order('created_at', { ascending: false });
             
+            const { data, error } = await query;
             if (error) throw error;
             setAnnouncements(data || []);
         } catch (e) {
@@ -30,6 +39,78 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
             alert('お知らせの取得に失敗しました: ' + e.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleAnnouncementSubmit = async (e) => {
+        e.preventDefault();
+        if (!supabase || !isAdmin) return;
+        
+        try {
+            const payload = {
+                title: announcementForm.title,
+                content: announcementForm.content,
+                link_url: announcementForm.link_url || null,
+                link_text: announcementForm.link_text || null,
+                is_active: announcementForm.is_active
+            };
+
+            if (editingAnnouncement) {
+                const { error } = await supabase
+                    .from('announcements')
+                    .update(payload)
+                    .eq('id', editingAnnouncement.id);
+                if (error) throw error;
+                alert('お知らせを更新しました');
+            } else {
+                const { error } = await supabase
+                    .from('announcements')
+                    .insert([payload]);
+                if (error) throw error;
+                alert('お知らせを作成しました');
+            }
+
+            setShowAnnouncementForm(false);
+            setEditingAnnouncement(null);
+            setAnnouncementForm({
+                title: '',
+                content: '',
+                link_url: '',
+                link_text: '',
+                is_active: true
+            });
+            await fetchAnnouncements();
+        } catch (e) {
+            alert('エラー: ' + e.message);
+        }
+    };
+
+    const handleEditAnnouncement = (announcement) => {
+        setEditingAnnouncement(announcement);
+        setAnnouncementForm({
+            title: announcement.title,
+            content: announcement.content,
+            link_url: announcement.link_url || '',
+            link_text: announcement.link_text || '',
+            is_active: announcement.is_active
+        });
+        setShowAnnouncementForm(true);
+    };
+
+    const handleDeleteAnnouncement = async (id) => {
+        if (!confirm('本当に削除しますか？')) return;
+        if (!supabase || !isAdmin) return;
+        
+        try {
+            const { error } = await supabase
+                .from('announcements')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            alert('削除しました');
+            await fetchAnnouncements();
+        } catch (e) {
+            alert('削除エラー: ' + e.message);
         }
     };
 
@@ -46,8 +127,139 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                         <ArrowLeft size={20} /> トップに戻る
                     </button>
 
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-4">お知らせ</h1>
-                    <p className="text-gray-600 mb-8">最新の情報やお知らせをお届けします</p>
+                    <div className="flex justify-between items-center mb-8">
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">お知らせ</h1>
+                            <p className="text-gray-600">最新の情報やお知らせをお届けします</p>
+                        </div>
+                        {isAdmin && (
+                            <button 
+                                onClick={() => {
+                                    setEditingAnnouncement(null);
+                                    setAnnouncementForm({
+                                        title: '',
+                                        content: '',
+                                        link_url: '',
+                                        link_text: '',
+                                        is_active: true
+                                    });
+                                    setShowAnnouncementForm(true);
+                                }}
+                                className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-indigo-700 flex items-center gap-2"
+                            >
+                                <Plus size={16}/> 新規作成
+                            </button>
+                        )}
+                    </div>
+
+                    {/* 管理者向けお知らせ作成・編集フォーム */}
+                    {isAdmin && showAnnouncementForm && (
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-8">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                    <Bell size={20} className="text-red-600"/> 
+                                    {editingAnnouncement ? 'お知らせを編集' : '新規お知らせを作成'}
+                                    <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">ADMIN</span>
+                                </h3>
+                                <button 
+                                    onClick={() => {
+                                        setShowAnnouncementForm(false);
+                                        setEditingAnnouncement(null);
+                                        setAnnouncementForm({
+                                            title: '',
+                                            content: '',
+                                            link_url: '',
+                                            link_text: '',
+                                            is_active: true
+                                        });
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20}/>
+                                </button>
+                            </div>
+                            <form onSubmit={handleAnnouncementSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">タイトル *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={announcementForm.title}
+                                        onChange={e => setAnnouncementForm({...announcementForm, title: e.target.value})}
+                                        className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900"
+                                        placeholder="お知らせのタイトル"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">内容 *</label>
+                                    <textarea
+                                        required
+                                        value={announcementForm.content}
+                                        onChange={e => setAnnouncementForm({...announcementForm, content: e.target.value})}
+                                        className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900 h-32"
+                                        placeholder="お知らせの内容"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">リンクURL（オプション）</label>
+                                        <input
+                                            type="url"
+                                            value={announcementForm.link_url}
+                                            onChange={e => setAnnouncementForm({...announcementForm, link_url: e.target.value})}
+                                            className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900"
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">リンクテキスト（オプション）</label>
+                                        <input
+                                            type="text"
+                                            value={announcementForm.link_text}
+                                            onChange={e => setAnnouncementForm({...announcementForm, link_text: e.target.value})}
+                                            className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900"
+                                            placeholder="詳細はこちら"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="is_active"
+                                        checked={announcementForm.is_active}
+                                        onChange={e => setAnnouncementForm({...announcementForm, is_active: e.target.checked})}
+                                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="is_active" className="text-sm font-bold text-gray-700">表示する</label>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="submit"
+                                        className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+                                    >
+                                        {editingAnnouncement ? '更新する' : '作成する'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowAnnouncementForm(false);
+                                            setEditingAnnouncement(null);
+                                            setAnnouncementForm({
+                                                title: '',
+                                                content: '',
+                                                link_url: '',
+                                                link_text: '',
+                                                is_active: true
+                                            });
+                                        }}
+                                        className="px-6 bg-gray-100 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"
+                                    >
+                                        キャンセル
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
 
                     {loading ? (
                         <div className="text-center py-20">
@@ -60,21 +272,48 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            {announcements.map((announcement) => (
+                            {announcements
+                                .filter(announcement => isAdmin || announcement.is_active)
+                                .map((announcement) => (
                                 <div 
                                     key={announcement.id} 
-                                    className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+                                    className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow relative"
                                 >
-                                    <div className="flex items-start justify-between mb-3">
+                                    {isAdmin && (
+                                        <div className="absolute top-4 right-4 flex gap-2">
+                                            <button
+                                                onClick={() => handleEditAnnouncement(announcement)}
+                                                className="text-indigo-600 hover:text-indigo-700 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                title="編集"
+                                            >
+                                                <Edit3 size={16}/>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteAnnouncement(announcement.id)}
+                                                className="text-red-600 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="削除"
+                                            >
+                                                <Trash2 size={16}/>
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="flex items-start justify-between mb-3 pr-20">
                                         <h2 className="text-xl font-bold text-gray-900">{announcement.title}</h2>
-                                        <span className="text-xs text-gray-500 flex items-center gap-1 whitespace-nowrap ml-4">
-                                            <Calendar size={14} />
-                                            {new Date(announcement.created_at).toLocaleDateString('ja-JP', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            })}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {isAdmin && !announcement.is_active && (
+                                                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold">
+                                                    非表示
+                                                </span>
+                                            )}
+                                            <span className="text-xs text-gray-500 flex items-center gap-1 whitespace-nowrap ml-4">
+                                                <Calendar size={14} />
+                                                {new Date(announcement.created_at).toLocaleDateString('ja-JP', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric'
+                                                })}
+                                            </span>
+                                        </div>
                                     </div>
                                     
                                     <div className="text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">

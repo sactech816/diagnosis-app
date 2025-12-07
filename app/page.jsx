@@ -180,6 +180,23 @@ const App = () => {
   const handleSave = async (form, id) => {
       if(!supabase) return;
       try {
+          // 編集時の権限チェック
+          if (id) {
+              const { data: existingQuiz, error: fetchError } = await supabase
+                  .from('quizzes')
+                  .select('user_id')
+                  .eq('id', id)
+                  .single();
+              
+              if (fetchError) throw fetchError;
+              
+              // 管理者でない場合、かつ自分のクイズでない場合は編集不可
+              if (!isAdmin && existingQuiz.user_id !== user?.id) {
+                  alert('この診断クイズを編集する権限がありません。');
+                  return;
+              }
+          }
+
           const payload = {
               title: form.title, 
               description: form.description, 
@@ -187,7 +204,7 @@ const App = () => {
               color: form.color,
               questions: form.questions, 
               results: form.results, 
-              user_id: user?.id || null,
+              user_id: id ? undefined : (user?.id || null), // 編集時はuser_idを変更しない
               layout: form.layout || 'card',
               image_url: form.image_url || null,
               mode: form.mode || 'diagnosis',
@@ -225,6 +242,21 @@ const App = () => {
   const handleDelete = async (id) => {
       if(!confirm('本当に削除しますか？')) return;
       try {
+          // 権限チェック
+          const { data: existingQuiz, error: fetchError } = await supabase
+              .from('quizzes')
+              .select('user_id, title')
+              .eq('id', id)
+              .single();
+          
+          if (fetchError) throw fetchError;
+          
+          // 管理者でない場合、かつ自分のクイズでない場合は削除不可
+          if (!isAdmin && existingQuiz.user_id !== user?.id) {
+              alert('この診断クイズを削除する権限がありません。');
+              return;
+          }
+          
           const { error } = await supabase.from('quizzes').delete().eq('id', id);
           if(error) throw error;
           alert('削除しました');
@@ -318,6 +350,7 @@ const App = () => {
         {view === 'editor' && (
             <Editor 
                 user={user} 
+                isAdmin={isAdmin}
                 initialData={editingQuiz}
                 setPage={(p) => navigateTo(p)}
                 onBack={()=>{ navigateTo('portal'); setEditingQuiz(null);}} 

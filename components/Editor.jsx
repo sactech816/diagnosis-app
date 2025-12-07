@@ -3,7 +3,8 @@ import {
     Edit3, MessageSquare, Trophy, Loader2, Save, Share2, 
     Sparkles, Wand2, BookOpen, Image as ImageIcon, 
     Layout, MessageCircle, ArrowLeft, Briefcase, GraduationCap, 
-    CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode, UploadCloud, Mail, FileText, ChevronDown, RefreshCw, Eye
+    CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode, UploadCloud, Mail, FileText, ChevronDown, RefreshCw, Eye, 
+    ShoppingCart, Gift, Download, Code, Users, Star, Copy
 } from 'lucide-react';
 import { generateSlug } from '../lib/utils';
 import { supabase } from '../lib/supabase';
@@ -226,7 +227,7 @@ const Textarea = ({label, val, onChange}) => (
     </div>
 );
 
-const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth }) => {
+const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdmin }) => {
   useEffect(() => { 
     document.title = "クイズ作成・編集 | 診断クイズメーカー"; 
     window.scrollTo(0, 0);
@@ -241,6 +242,8 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth }) => 
   const [showPreview, setShowPreview] = useState(false);
   const [previewQuestionIndex, setPreviewQuestionIndex] = useState(0);
   const [hideLoginBanner, setHideLoginBanner] = useState(false);
+  const [showDonationModal, setShowDonationModal] = useState(false);
+  const [justSavedQuizId, setJustSavedQuizId] = useState(null);
 
   const STEPS = [
       { id: 1, icon: Sparkles, label: 'クイズの種類', description: 'テンプレートまたはAI生成' },
@@ -522,6 +525,136 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth }) => 
             </div>
         )}
 
+        {/* 保存成功時の寄付モーダル */}
+        {showDonationModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowDonationModal(false)}>
+                <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fade-in" onClick={e => e.stopPropagation()}>
+                    <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-6 flex justify-between items-center z-10 rounded-t-2xl">
+                        <div>
+                            <h3 className="font-bold text-xl flex items-center gap-2">
+                                <Trophy size={24}/> 診断クイズを作成しました！
+                            </h3>
+                            <p className="text-sm text-indigo-100 mt-1">公開URLをコピーしてシェアできます</p>
+                        </div>
+                        <button onClick={() => setShowDonationModal(false)} className="text-white hover:bg-white/20 p-2 rounded-full transition-colors">
+                            <X size={24}/>
+                        </button>
+                    </div>
+                    
+                    <div className="p-6 space-y-6">
+                        {/* 公開URL */}
+                        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-4">
+                            <p className="text-sm font-bold text-gray-700 mb-2">公開URL</p>
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="text" 
+                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}?id=${justSavedQuizId}`}
+                                    readOnly
+                                    className="flex-1 text-xs bg-white border border-indigo-300 p-2 rounded-lg text-gray-900 font-bold"
+                                />
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}?id=${justSavedQuizId}`);
+                                        alert('URLをコピーしました！');
+                                    }}
+                                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors whitespace-nowrap"
+                                >
+                                    <Copy size={16} className="inline mr-1"/> コピー
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 寄付ボタンとメリット説明 */}
+                        <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-xl p-6">
+                            <div className="flex items-start gap-3 mb-4">
+                                <div className="bg-orange-500 p-3 rounded-full">
+                                    <Gift size={24} className="text-white"/>
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-lg text-gray-900 mb-1 flex items-center gap-2">
+                                        応援・寄付でPro機能を開放
+                                        <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">オプション</span>
+                                    </h4>
+                                    <p className="text-sm text-gray-600">
+                                        500円〜50,000円で、以下の追加機能が使えるようになります
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                <div className="bg-white rounded-lg p-4 border border-orange-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Download className="text-indigo-600" size={18}/>
+                                        <span className="font-bold text-sm text-gray-900">HTMLダウンロード</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600">自分のサーバーにアップロード可能</p>
+                                </div>
+                                <div className="bg-white rounded-lg p-4 border border-orange-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Code className="text-indigo-600" size={18}/>
+                                        <span className="font-bold text-sm text-gray-900">埋め込みコード</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600">WordPressなどに埋め込み可能</p>
+                                </div>
+                                {form.collect_email && (
+                                    <div className="bg-white rounded-lg p-4 border border-orange-200">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Users className="text-indigo-600" size={18}/>
+                                            <span className="font-bold text-sm text-gray-900">メールリスト取得</span>
+                                        </div>
+                                        <p className="text-xs text-gray-600">CSVでダウンロード可能</p>
+                                    </div>
+                                )}
+                                <div className="bg-white rounded-lg p-4 border border-orange-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Star className="text-indigo-600" size={18}/>
+                                        <span className="font-bold text-sm text-gray-900">優先サポート</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600">機能改善の優先対応</p>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={() => {
+                                    setShowDonationModal(false);
+                                    // ダッシュボードへ遷移（寄付機能はダッシュボードにある）
+                                    if (user) {
+                                        setPage('dashboard');
+                                    } else {
+                                        setShowAuth(true);
+                                    }
+                                }}
+                                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold py-4 rounded-xl hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg flex items-center justify-center gap-2 text-lg"
+                            >
+                                <ShoppingCart size={20}/> マイページで寄付・機能開放する
+                            </button>
+                            <p className="text-xs text-center text-gray-500 mt-2">
+                                ※寄付は任意です。無料でも診断クイズの公開・シェアは可能です
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => {
+                                    handlePublish(justSavedQuizId);
+                                    setShowDonationModal(false);
+                                }}
+                                className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Share2 size={18}/> 公開URLをコピー
+                            </button>
+                            <button 
+                                onClick={() => setShowDonationModal(false)}
+                                className="px-6 bg-gray-100 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* ヘッダー */}
         <div className="bg-white border-b px-6 py-4 flex justify-between sticky top-0 z-50 shadow-sm">
             <div className="flex items-center gap-3">
@@ -561,7 +694,14 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth }) => 
                             regenerateSlug: regenerateSlug
                         };
                         const returnedId = await onSave(saveData, savedId || initialData?.id);
-                        if(returnedId) setSavedId(returnedId); 
+                        if(returnedId) {
+                            setSavedId(returnedId);
+                            // 新規作成時のみ寄付モーダルを表示
+                            if (!initialData && !savedId) {
+                                setJustSavedQuizId(returnedId);
+                                setShowDonationModal(true);
+                            }
+                        }
                         setIsSaving(false);
                     }} disabled={isSaving} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-indigo-700 shadow-md transition-all whitespace-nowrap">
                     {isSaving ? <Loader2 className="animate-spin"/> : <Save/>} 保存
@@ -1113,7 +1253,13 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth }) => 
                                         const returnedId = await onSave(saveData, savedId || initialData?.id);
                                         if(returnedId) {
                                             setSavedId(returnedId);
-                                            handlePublish(returnedId);
+                                            // 新規作成時のみ寄付モーダルを表示
+                                            if (!initialData && !savedId) {
+                                                setJustSavedQuizId(returnedId);
+                                                setShowDonationModal(true);
+                                            } else {
+                                                handlePublish(returnedId);
+                                            }
                                         }
                                         setIsSaving(false);
                                     }} 
