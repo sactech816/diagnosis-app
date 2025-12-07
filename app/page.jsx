@@ -136,19 +136,11 @@ const App = () => {
               '/editor': 'editor'
           };
           
-          // レガシー互換: クエリパラメータのpage指定がある場合
-          if (page && pathToView[`/${page}`]) {
-              setView(page);
-          }
-          // パス名から判定
-          else if (pathToView[pathname]) {
-              setView(pathToView[pathname]);
-          }
           // 決済完了・キャンセル戻りならダッシュボードへ強制移動
-          else if (paymentStatus === 'success' || paymentStatus === 'cancel') {
+          if (paymentStatus === 'success' || paymentStatus === 'cancel') {
               setView('dashboard');
-          } 
-          // クイズIDがある場合（シェアURLからのアクセス）
+          }
+          // クイズIDがある場合（シェアURLからのアクセス）- パス名のチェックより優先
           else if(id && supabase) {
               try {
                   // slug(文字列)で検索
@@ -181,6 +173,14 @@ const App = () => {
                   console.error('クイズ読み込みエラー:', error);
                   setView('portal');
               }
+          }
+          // レガシー互換: クエリパラメータのpage指定がある場合
+          else if (page && pathToView[`/${page}`]) {
+              setView(page);
+          }
+          // パス名から判定
+          else if (pathToView[pathname]) {
+              setView(pathToView[pathname]);
           } else {
               // 何も指定がなければポータルへ
               setView('portal');
@@ -221,15 +221,8 @@ const App = () => {
               '/editor': 'editor'
           };
           
-          // パス名から判定
-          if (pathToView[pathname]) {
-              setView(pathToView[pathname]);
-              if (pathToView[pathname] !== 'quiz') {
-                  setSelectedQuiz(null);
-              }
-          }
-          // クイズIDがある場合
-          else if (id && supabase) {
+          // クイズIDがある場合は、パス名のチェックより先にクイズを読み込む
+          if (id && supabase) {
               const loadQuiz = async () => {
                   try {
                       // slug(文字列)で検索
@@ -265,6 +258,13 @@ const App = () => {
                   }
               };
               loadQuiz();
+          }
+          // パス名から判定（クイズIDがない場合のみ）
+          else if (pathToView[pathname]) {
+              setView(pathToView[pathname]);
+              if (pathToView[pathname] !== 'quiz') {
+                  setSelectedQuiz(null);
+              }
           } else {
               setView('portal');
               setSelectedQuiz(null);
