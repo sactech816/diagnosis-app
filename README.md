@@ -50,7 +50,29 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 
 # OpenAI設定（AI生成機能を使用する場合）
 NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key
+
+# エックスサーバ設定（HTMLファイルの自動転送機能を使用する場合）
+XSERVER_FTP_HOST=your-domain.xsrv.jp
+XSERVER_FTP_PORT=21
+XSERVER_FTP_USERNAME=your_ftp_username
+XSERVER_FTP_PASSWORD=your_ftp_password
+XSERVER_UPLOAD_PATH=/public_html/quizzes
+XSERVER_BASE_URL=https://your-domain.com
 ```
+
+**エックスサーバ設定の説明**:
+- `XSERVER_FTP_HOST`: エックスサーバのFTPホスト名（通常は `your-domain.xsrv.jp` または `your-domain.com`）
+- `XSERVER_FTP_PORT`: FTPポート番号（通常は21）
+- `XSERVER_FTP_USERNAME`: FTPユーザー名（エックスサーバのサーバーパネルで確認）
+- `XSERVER_FTP_PASSWORD`: FTPパスワード（エックスサーバのサーバーパネルで確認）
+- `XSERVER_UPLOAD_PATH`: アップロード先のディレクトリパス（デフォルト: `/public_html/quizzes`）
+- `XSERVER_BASE_URL`: アップロードされたHTMLファイルにアクセスするためのベースURL（例: `https://your-domain.com`）
+
+**注意事項**:
+- 診断クイズを保存すると、自動的にHTMLファイルが生成され、エックスサーバにアップロードされます
+- アップロード先のディレクトリ（例: `/public_html/quizzes`）は、エックスサーバのサーバーパネルで事前に作成しておく必要があります
+- アップロードされたHTMLファイルは、`https://your-domain.com/quizzes/quiz-slug.html` の形式でアクセスできます
+- アップロードに失敗しても、診断クイズの保存自体は成功します（エラーメッセージが表示されます）
 
 ## Getting Started
 

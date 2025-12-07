@@ -5,6 +5,7 @@ import Script from 'next/script';
 import { supabase } from '../lib/supabase';
 import { generateSlug } from '../lib/utils';
 import { getAdminEmails } from '../lib/constants';
+import { generateQuizHTML } from '../lib/htmlGenerator';
 
 import AuthModal from '../components/AuthModal';
 import Portal from '../components/Portal';
@@ -403,10 +404,39 @@ const App = () => {
           if(result.error) throw result.error;
           if(!result.data || result.data.length === 0) throw new Error("更新できませんでした。");
           
-          alert('保存しました！');
+          const savedQuiz = result.data[0];
+          
+          // HTMLを生成してエックスサーバに自動転送（オプション機能、バックグラウンド処理）
+          try {
+              const htmlContent = generateQuizHTML(savedQuiz);
+              const filename = `${savedQuiz.slug || savedQuiz.id}.html`;
+              
+              const uploadResponse = await fetch('/api/upload-html', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ htmlContent, filename })
+              });
+              
+              const uploadResult = await uploadResponse.json();
+              
+              if (uploadResponse.ok && uploadResult.success) {
+                  // 成功時はコンソールにログ出力（ユーザーには表示しない）
+                  console.log('HTMLファイルをエックスサーバにアップロードしました:', uploadResult.url);
+              } else if (uploadResult.skipped) {
+                  // 環境変数が設定されていない場合は、コンソールにログ出力のみ
+                  console.log('エックスサーバの設定が未設定のため、HTMLアップロードをスキップしました');
+              } else {
+                  // アップロードに失敗した場合（接続エラーなど）、コンソールに警告出力
+                  console.warn('HTMLファイルのアップロードに失敗しました:', uploadResult.error);
+              }
+          } catch (uploadError) {
+              // アップロードエラーは保存を妨げない（ネットワークエラーなど）、コンソールにエラー出力
+              console.error('HTMLアップロードエラー:', uploadError);
+          }
+          
           await fetchQuizzes();
           
-          return result.data[0].slug || result.data[0].id;
+          return savedQuiz.slug || savedQuiz.id;
           
       } catch(e) { 
           alert('保存エラー: ' + e.message); 
