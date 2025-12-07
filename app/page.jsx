@@ -142,19 +142,35 @@ const App = () => {
           } 
           // クイズIDがある場合（シェアURLからのアクセス）
           else if(id && supabase) {
-              // slug(文字列)で検索
-              let { data } = await supabase.from('quizzes').select('*').eq('slug', id).single();
-              // なければID(数値)で検索（互換性のため）
-              if (!data && !isNaN(id)) {
-                 const res = await supabase.from('quizzes').select('*').eq('id', id).single();
-                 data = res.data;
-              }
+              try {
+                  // slug(文字列)で検索
+                  let { data, error: slugError } = await supabase.from('quizzes').select('*').eq('slug', id).single();
+                  
+                  // slugで見つからない場合、ID(数値)で検索（互換性のため）
+                  if (!data && !isNaN(id)) {
+                     const res = await supabase.from('quizzes').select('*').eq('id', id).single();
+                     data = res.data;
+                     if (res.error && !res.data) {
+                         console.error('クイズ検索エラー:', res.error);
+                     }
+                  } else if (slugError && !data) {
+                      // データがなく、エラーがある場合のみログ出力（レコードが見つからない場合は警告のみ）
+                      const isNotFoundError = slugError.message?.includes('No rows') || slugError.code === 'PGRST116';
+                      if (!isNotFoundError) {
+                          console.error('slug検索エラー:', slugError);
+                      }
+                  }
 
-              if(data) { 
-                  setSelectedQuiz(data); 
-                  setView('quiz'); 
-              } else {
-                  // ID指定があるが見つからない場合はポータルへ
+                  if(data) { 
+                      setSelectedQuiz(data); 
+                      setView('quiz'); 
+                  } else {
+                      // ID指定があるが見つからない場合はポータルへ
+                      console.warn(`クイズが見つかりませんでした (id: ${id})`);
+                      setView('portal');
+                  }
+              } catch (error) {
+                  console.error('クイズ読み込みエラー:', error);
                   setView('portal');
               }
           } else {
@@ -166,23 +182,95 @@ const App = () => {
       init();
   }, []);
 
-  // ブラウザの「戻る」ボタン対応
+  // URLパラメータの変更を監視（ブラウザの戻る/進むボタンや直接URL入力に対応）
   useEffect(() => {
-      const handlePopState = (event) => {
-          if (event.state && event.state.view) {
-              setView(event.state.view);
-              if (event.state.view === 'quiz' && event.state.id) {
-                  setView('portal');
+      let isInitialMount = true;
+      
+      const handleLocationChange = () => {
+          // 初回マウント時は最初のuseEffectで処理されるのでスキップ
+          if (isInitialMount) {
+              isInitialMount = false;
+              return;
+          }
+          
+          const params = new URLSearchParams(window.location.search);
+          const id = params.get('id');
+          const pathname = window.location.pathname;
+          
+          // パス名からページを判定
+          const pathToView = {
+              '/': 'portal',
+              '/howto': 'howto',
+              '/effective': 'effective',
+              '/logic': 'logic',
+              '/contact': 'contact',
+              '/legal': 'legal',
+              '/privacy': 'privacy',
+              '/faq': 'faq',
+              '/price': 'price',
+              '/announcements': 'announcements',
+              '/dashboard': 'dashboard',
+              '/editor': 'editor'
+          };
+          
+          // パス名から判定
+          if (pathToView[pathname]) {
+              setView(pathToView[pathname]);
+              if (pathToView[pathname] !== 'quiz') {
                   setSelectedQuiz(null);
               }
+          }
+          // クイズIDがある場合
+          else if (id && supabase) {
+              const loadQuiz = async () => {
+                  try {
+                      // slug(文字列)で検索
+                      let { data, error: slugError } = await supabase.from('quizzes').select('*').eq('slug', id).single();
+                      
+                      // slugで見つからない場合、ID(数値)で検索（互換性のため）
+                      if (!data && !isNaN(id)) {
+                         const res = await supabase.from('quizzes').select('*').eq('id', id).single();
+                         data = res.data;
+                         if (res.error && !res.data) {
+                             console.error('クイズ検索エラー:', res.error);
+                         }
+                      } else if (slugError && !data) {
+                          // データがなく、エラーがある場合のみログ出力（レコードが見つからない場合は警告のみ）
+                          const isNotFoundError = slugError.message?.includes('No rows') || slugError.code === 'PGRST116';
+                          if (!isNotFoundError) {
+                              console.error('slug検索エラー:', slugError);
+                          }
+                      }
+
+                      if(data) { 
+                          setSelectedQuiz(data); 
+                          setView('quiz'); 
+                      } else {
+                          console.warn(`クイズが見つかりませんでした (id: ${id})`);
+                          setView('portal');
+                          setSelectedQuiz(null);
+                      }
+                  } catch (error) {
+                      console.error('クイズ読み込みエラー:', error);
+                      setView('portal');
+                      setSelectedQuiz(null);
+                  }
+              };
+              loadQuiz();
           } else {
               setView('portal');
               setSelectedQuiz(null);
           }
       };
-      window.addEventListener('popstate', handlePopState);
-      return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+
+      // popstateイベント（ブラウザの戻る/進むボタン）を監視
+      window.addEventListener('popstate', handleLocationChange);
+      
+      return () => {
+          window.removeEventListener('popstate', handleLocationChange);
+      };
+  }, [supabase]);
+
 
   // 画面遷移ハンドラ
   const navigateTo = (newView, params = {}) => {
