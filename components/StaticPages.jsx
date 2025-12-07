@@ -436,15 +436,15 @@ export const LegalPage = ({ onBack, setPage, user, onLogout, setShowAuth, isAdmi
                 <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-6 text-sm">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
                         <div className="font-bold text-gray-500">販売事業者名</div>
-                        <div className="md:col-span-2 text-gray-900">[あなたの事業者名または氏名]</div>
+                        <div className="md:col-span-2 text-gray-900">ケイショウ株式会社</div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
-                        <div className="font-bold text-gray-500">代表者または運営統括責任者</div>
-                        <div className="md:col-span-2 text-gray-900">[代表者氏名]</div>
+                        <div className="font-bold text-gray-500">運営統括責任者</div>
+                        <div className="md:col-span-2 text-gray-900">宇城利浩</div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
                         <div className="font-bold text-gray-500">所在地</div>
-                        <div className="md:col-span-2 text-gray-900">[住所]</div>
+                        <div className="md:col-span-2 text-gray-900">福井県福井市中央1-9-24</div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
                         <div className="font-bold text-gray-500">お問い合わせ先</div>

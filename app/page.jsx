@@ -46,6 +46,44 @@ const App = () => {
 
   useEffect(() => {
       const init = async () => {
+          // URLパラメータを最初にチェック（クイズIDがある場合は優先）
+          const params = new URLSearchParams(window.location.search);
+          const id = params.get('id');
+          
+          // クイズIDがある場合は、認証処理より先にクイズを読み込む
+          if (id && supabase) {
+              console.log('初期化: クイズIDを検出しました:', id);
+              try {
+                  // slug(文字列)で検索
+                  let { data, error: slugError } = await supabase.from('quizzes').select('*').eq('slug', id).single();
+                  
+                  // slugで見つからない場合、ID(数値)で検索（互換性のため）
+                  if (!data && !isNaN(id)) {
+                     const res = await supabase.from('quizzes').select('*').eq('id', id).single();
+                     data = res.data;
+                     if (res.error && !res.data) {
+                         console.error('クイズ検索エラー:', res.error);
+                     }
+                  } else if (slugError && !data) {
+                      const isNotFoundError = slugError.message?.includes('No rows') || slugError.code === 'PGRST116';
+                      if (!isNotFoundError) {
+                          console.error('slug検索エラー:', slugError);
+                      }
+                  }
+
+                  if(data) { 
+                      console.log('初期化: クイズを読み込みました:', data.title);
+                      setSelectedQuiz(data); 
+                      setView('quiz');
+                      // クイズが読み込めた場合は、認証処理をスキップせずに続行
+                  } else {
+                      console.warn(`初期化: クイズが見つかりませんでした (id: ${id})`);
+                  }
+              } catch (error) {
+                  console.error('初期化: クイズ読み込みエラー:', error);
+              }
+          }
+          
           // ユーザーセッションの確認
           if(supabase) {
               // 認証状態の変更を監視（最初に設定）
@@ -64,6 +102,13 @@ const App = () => {
                 }
                 // ログイン成功時にマイページにリダイレクト（パスワードリセット以外）
                 else if (event === 'SIGNED_IN' && session?.user && !currentHash?.includes('type=recovery')) {
+                    // クイズIDがある場合はリダイレクトしない
+                    const params = new URLSearchParams(window.location.search);
+                    const id = params.get('id');
+                    if (id) {
+                        // クイズIDがある場合は、クイズを表示するためリダイレクトしない
+                        return;
+                    }
                     // 現在のパスがルートまたはローディング状態の場合のみリダイレクト
                     const currentPath = window.location.pathname;
                     if (currentPath === '/' || currentPath === '') {
@@ -114,35 +159,23 @@ const App = () => {
               }
           }
 
-          // URLパラメータとパスのチェック
-          const params = new URLSearchParams(window.location.search);
-          const id = params.get('id');
+          // URLパラメータとパスのチェック（クイズIDが既に読み込まれている場合はスキップ）
           const page = params.get('page'); // レガシー互換のため残す
           const paymentStatus = params.get('payment'); // Stripeからの戻り判定
           const pathname = window.location.pathname;
           
-          // パス名からページを判定
-          const pathToView = {
-              '/': 'portal',
-              '/howto': 'howto',
-              '/effective': 'effective',
-              '/logic': 'logic',
-              '/contact': 'contact',
-              '/legal': 'legal',
-              '/privacy': 'privacy',
-              '/faq': 'faq',
-              '/price': 'price',
-              '/announcements': 'announcements',
-              '/dashboard': 'dashboard',
-              '/editor': 'editor'
-          };
-          
+          // クイズが既に読み込まれている場合は、ビューの設定をスキップ
+          if (id && selectedQuiz) {
+              console.log('初期化: クイズは既に読み込まれています');
+              // ビューは既に設定されているので、そのまま続行
+          }
           // 決済完了・キャンセル戻りならダッシュボードへ強制移動
-          if (paymentStatus === 'success' || paymentStatus === 'cancel') {
+          else if (paymentStatus === 'success' || paymentStatus === 'cancel') {
               setView('dashboard');
           }
-          // クイズIDがある場合（シェアURLからのアクセス）- パス名のチェックより優先
-          else if(id && supabase) {
+          // クイズIDがあるが、まだ読み込まれていない場合（上記の処理で読み込めなかった場合）
+          else if(id && supabase && !selectedQuiz) {
+              console.log('初期化: クイズIDがありますが、まだ読み込まれていません。再試行します:', id);
               try {
                   // slug(文字列)で検索
                   let { data, error: slugError } = await supabase.from('quizzes').select('*').eq('slug', id).single();
@@ -155,7 +188,6 @@ const App = () => {
                          console.error('クイズ検索エラー:', res.error);
                      }
                   } else if (slugError && !data) {
-                      // データがなく、エラーがある場合のみログ出力（レコードが見つからない場合は警告のみ）
                       const isNotFoundError = slugError.message?.includes('No rows') || slugError.code === 'PGRST116';
                       if (!isNotFoundError) {
                           console.error('slug検索エラー:', slugError);
@@ -163,28 +195,61 @@ const App = () => {
                   }
 
                   if(data) { 
+                      console.log('初期化: クイズを読み込みました（再試行）:', data.title);
                       setSelectedQuiz(data); 
                       setView('quiz'); 
                   } else {
-                      // ID指定があるが見つからない場合はポータルへ
-                      console.warn(`クイズが見つかりませんでした (id: ${id})`);
+                      console.warn(`初期化: クイズが見つかりませんでした (id: ${id})`);
                       setView('portal');
                   }
               } catch (error) {
-                  console.error('クイズ読み込みエラー:', error);
+                  console.error('初期化: クイズ読み込みエラー:', error);
                   setView('portal');
               }
           }
           // レガシー互換: クエリパラメータのpage指定がある場合
-          else if (page && pathToView[`/${page}`]) {
-              setView(page);
+          else if (page) {
+              const pathToView = {
+                  '/': 'portal',
+                  '/howto': 'howto',
+                  '/effective': 'effective',
+                  '/logic': 'logic',
+                  '/contact': 'contact',
+                  '/legal': 'legal',
+                  '/privacy': 'privacy',
+                  '/faq': 'faq',
+                  '/price': 'price',
+                  '/announcements': 'announcements',
+                  '/dashboard': 'dashboard',
+                  '/editor': 'editor'
+              };
+              if (pathToView[`/${page}`]) {
+                  setView(page);
+              } else {
+                  setView('portal');
+              }
           }
-          // パス名から判定
-          else if (pathToView[pathname]) {
-              setView(pathToView[pathname]);
-          } else {
-              // 何も指定がなければポータルへ
-              setView('portal');
+          // パス名から判定（クイズIDがない場合のみ）
+          else if (!id) {
+              const pathToView = {
+                  '/': 'portal',
+                  '/howto': 'howto',
+                  '/effective': 'effective',
+                  '/logic': 'logic',
+                  '/contact': 'contact',
+                  '/legal': 'legal',
+                  '/privacy': 'privacy',
+                  '/faq': 'faq',
+                  '/price': 'price',
+                  '/announcements': 'announcements',
+                  '/dashboard': 'dashboard',
+                  '/editor': 'editor'
+              };
+              if (pathToView[pathname]) {
+                  setView(pathToView[pathname]);
+              } else {
+                  setView('portal');
+              }
           }
           await fetchQuizzes();
       };
@@ -224,6 +289,7 @@ const App = () => {
           
           // クイズIDがある場合は、パス名のチェックより先にクイズを読み込む
           if (id && supabase) {
+              console.log('handleLocationChange: クイズIDを検出しました:', id);
               const loadQuiz = async () => {
                   try {
                       // slug(文字列)で検索
@@ -245,15 +311,16 @@ const App = () => {
                       }
 
                       if(data) { 
+                          console.log('handleLocationChange: クイズを読み込みました:', data.title);
                           setSelectedQuiz(data); 
                           setView('quiz'); 
                       } else {
-                          console.warn(`クイズが見つかりませんでした (id: ${id})`);
+                          console.warn(`handleLocationChange: クイズが見つかりませんでした (id: ${id})`);
                           setView('portal');
                           setSelectedQuiz(null);
                       }
                   } catch (error) {
-                      console.error('クイズ読み込みエラー:', error);
+                      console.error('handleLocationChange: クイズ読み込みエラー:', error);
                       setView('portal');
                       setSelectedQuiz(null);
                   }
