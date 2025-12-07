@@ -105,15 +105,36 @@ const App = () => {
               }
           }
 
-          // URLパラメータのチェック
+          // URLパラメータとパスのチェック
           const params = new URLSearchParams(window.location.search);
           const id = params.get('id');
-          const page = params.get('page');
+          const page = params.get('page'); // レガシー互換のため残す
           const paymentStatus = params.get('payment'); // Stripeからの戻り判定
+          const pathname = window.location.pathname;
           
-          // ページ指定がある場合（使い方ページなど）
-          if (page) {
+          // パス名からページを判定
+          const pathToView = {
+              '/': 'portal',
+              '/howto': 'howto',
+              '/effective': 'effective',
+              '/logic': 'logic',
+              '/contact': 'contact',
+              '/legal': 'legal',
+              '/privacy': 'privacy',
+              '/faq': 'faq',
+              '/price': 'price',
+              '/announcements': 'announcements',
+              '/dashboard': 'dashboard',
+              '/editor': 'editor'
+          };
+          
+          // レガシー互換: クエリパラメータのpage指定がある場合
+          if (page && pathToView[`/${page}`]) {
               setView(page);
+          }
+          // パス名から判定
+          else if (pathToView[pathname]) {
+              setView(pathToView[pathname]);
           }
           // 決済完了・キャンセル戻りならダッシュボードへ強制移動
           else if (paymentStatus === 'success' || paymentStatus === 'cancel') {
@@ -165,13 +186,27 @@ const App = () => {
 
   // 画面遷移ハンドラ
   const navigateTo = (newView, params = {}) => {
-      let url = window.location.pathname;
-      if (newView === 'quiz' && params.id) {
-          url += `?id=${params.id}`;
-      }
-      if (newView === 'portal') {
-          url = window.location.pathname;
-      }
+      let url = '/';
+      
+      // 各ページに固有のパスを設定
+      const pathMap = {
+          'portal': '/',
+          'quiz': params.id ? `/?id=${params.id}` : '/',
+          'editor': '/editor',
+          'dashboard': '/dashboard',
+          'howto': '/howto',
+          'effective': '/effective',
+          'logic': '/logic',
+          'contact': '/contact',
+          'legal': '/legal',
+          'privacy': '/privacy',
+          'faq': '/faq',
+          'price': '/price',
+          'announcements': '/announcements'
+      };
+      
+      url = pathMap[newView] || '/';
+      
       window.history.pushState({ view: newView, ...params }, '', url);
       setView(newView);
   };
