@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS announcements (
     link_url TEXT, -- オプション: リンク先URL
     link_text TEXT, -- オプション: リンクテキスト（例: "詳細はこちら"）
     is_active BOOLEAN DEFAULT true, -- 表示/非表示の切り替え
+    announcement_date DATE, -- オプション: 表示用の日付（空欄の場合はcreated_atが使用される）
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -48,3 +49,6 @@ CREATE TRIGGER update_announcements_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+-- 既存のテーブルにannouncement_dateカラムを追加する場合（テーブルが既に存在する場合）
+-- このコマンドは、テーブルが既に作成されている場合にのみ実行してください
+-- ALTER TABLE announcements ADD COLUMN IF NOT EXISTS announcement_date DATE;

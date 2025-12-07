@@ -14,7 +14,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
         content: '',
         link_url: '',
         link_text: '',
-        is_active: true
+        is_active: true,
+        announcement_date: ''
     });
 
     useEffect(() => {
@@ -52,7 +53,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                 content: announcementForm.content,
                 link_url: announcementForm.link_url || null,
                 link_text: announcementForm.link_text || null,
-                is_active: announcementForm.is_active
+                is_active: announcementForm.is_active,
+                announcement_date: announcementForm.announcement_date || null
             };
 
             if (editingAnnouncement) {
@@ -77,7 +79,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                 content: '',
                 link_url: '',
                 link_text: '',
-                is_active: true
+                is_active: true,
+                announcement_date: ''
             });
             await fetchAnnouncements();
         } catch (e) {
@@ -87,12 +90,17 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
 
     const handleEditAnnouncement = (announcement) => {
         setEditingAnnouncement(announcement);
+        // announcement_dateが存在する場合はそれを使用、なければcreated_atを使用
+        const displayDate = announcement.announcement_date 
+            ? new Date(announcement.announcement_date).toISOString().split('T')[0]
+            : (announcement.created_at ? new Date(announcement.created_at).toISOString().split('T')[0] : '');
         setAnnouncementForm({
             title: announcement.title,
             content: announcement.content,
             link_url: announcement.link_url || '',
             link_text: announcement.link_text || '',
-            is_active: announcement.is_active
+            is_active: announcement.is_active,
+            announcement_date: displayDate
         });
         setShowAnnouncementForm(true);
     };
@@ -141,7 +149,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                                         content: '',
                                         link_url: '',
                                         link_text: '',
-                                        is_active: true
+                                        is_active: true,
+                                        announcement_date: ''
                                     });
                                     setShowAnnouncementForm(true);
                                 }}
@@ -222,15 +231,27 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                                         />
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        id="is_active"
-                                        checked={announcementForm.is_active}
-                                        onChange={e => setAnnouncementForm({...announcementForm, is_active: e.target.checked})}
-                                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="is_active" className="text-sm font-bold text-gray-700">表示する</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">表示日付</label>
+                                        <input
+                                            type="date"
+                                            value={announcementForm.announcement_date}
+                                            onChange={e => setAnnouncementForm({...announcementForm, announcement_date: e.target.value})}
+                                            className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">空欄の場合は作成日時が表示されます</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 pt-8">
+                                        <input
+                                            type="checkbox"
+                                            id="is_active"
+                                            checked={announcementForm.is_active}
+                                            onChange={e => setAnnouncementForm({...announcementForm, is_active: e.target.checked})}
+                                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="is_active" className="text-sm font-bold text-gray-700">表示する</label>
+                                    </div>
                                 </div>
                                 <div className="flex gap-2">
                                     <button
@@ -307,11 +328,18 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                                             )}
                                             <span className="text-xs text-gray-500 flex items-center gap-1 whitespace-nowrap ml-4">
                                                 <Calendar size={14} />
-                                                {new Date(announcement.created_at).toLocaleDateString('ja-JP', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
+                                                {announcement.announcement_date 
+                                                    ? new Date(announcement.announcement_date).toLocaleDateString('ja-JP', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    })
+                                                    : new Date(announcement.created_at).toLocaleDateString('ja-JP', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    })
+                                                }
                                             </span>
                                         </div>
                                     </div>
