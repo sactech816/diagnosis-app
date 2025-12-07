@@ -4,7 +4,7 @@ import {
     Sparkles, Wand2, BookOpen, Image as ImageIcon, 
     Layout, MessageCircle, ArrowLeft, Briefcase, GraduationCap, 
     CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode, UploadCloud, Mail, FileText, ChevronDown, RefreshCw, Eye, 
-    ShoppingCart, Gift, Download, Code, Users, Star, Copy
+    ShoppingCart, Gift, Download, Code, Users, Star, Copy, ExternalLink
 } from 'lucide-react';
 import { generateSlug } from '../lib/utils';
 import { supabase } from '../lib/supabase';
@@ -533,7 +533,12 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
 
         {/* 保存成功時の寄付モーダル */}
         {showDonationModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowDonationModal(false)}>
+            <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => {
+                // 背景クリックでは閉じない（Xボタンまたは閉じるボタンでのみ閉じる）
+                if (e.target === e.currentTarget) {
+                    // 背景クリックは無視
+                }
+            }}>
                 <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fade-in" onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-6 flex justify-between items-center z-10 rounded-t-2xl">
                         <div>
@@ -642,12 +647,12 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                         <div className="flex gap-3">
                             <button 
                                 onClick={() => {
-                                    handlePublish(justSavedQuizId);
-                                    setShowDonationModal(false);
+                                    const url = `${window.location.origin}?id=${justSavedQuizId}`;
+                                    window.open(url, '_blank');
                                 }}
                                 className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
                             >
-                                <Share2 size={18}/> 公開URLをコピー
+                                <ExternalLink size={18}/> 診断クイズにアクセス
                             </button>
                             <button 
                                 onClick={() => setShowDonationModal(false)}
@@ -676,6 +681,11 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                 </span>
             </div>
             <div className="flex gap-2">
+                {justSavedQuizId && !showDonationModal && (
+                    <button onClick={() => setShowDonationModal(true)} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:from-indigo-700 hover:to-purple-700 whitespace-nowrap transition-all shadow-md">
+                        <Trophy size={18}/> <span className="hidden md:inline">作成完了画面</span>
+                    </button>
+                )}
                 <button onClick={() => setShowPreview(!showPreview)} className="bg-purple-50 border border-purple-200 text-purple-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-purple-100 whitespace-nowrap transition-all">
                     <Eye size={18}/> <span className="hidden md:inline">プレビュー</span>
                 </button>

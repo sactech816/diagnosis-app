@@ -16,7 +16,7 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
     const [myQuizzes, setMyQuizzes] = useState([]);
     const [purchases, setPurchases] = useState([]); 
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState('graph');
+    const [viewMode, setViewMode] = useState('table');
     const [processingId, setProcessingId] = useState(null);
     
     // お知らせ管理用のステート（管理者のみ）
@@ -670,10 +670,13 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                                     <CheckCircle size={14}/> HTMLダウンロード
                                                 </button>
                                             ) : (
-                                                <button onClick={()=>handlePurchase(quiz)} disabled={processingId === quiz.id} className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-xs hover:bg-orange-600 flex items-center justify-center gap-1">
-                                                    {processingId === quiz.id ? <Loader2 className="animate-spin" size={14}/> : <ShoppingCart size={14}/>}
-                                                    機能開放 / 寄付
-                                                </button>
+                                                <>
+                                                    <button onClick={()=>handlePurchase(quiz)} disabled={processingId === quiz.id} className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-xs hover:bg-orange-600 flex items-center justify-center gap-1">
+                                                        {processingId === quiz.id ? <Loader2 className="animate-spin" size={14}/> : <ShoppingCart size={14}/>}
+                                                        機能開放 / 寄付
+                                                    </button>
+                                                    <p className="text-[10px] text-gray-500 text-center mt-1">※機能を開放するにはアカウント登録が必要です。</p>
+                                                </>
                                             )}
                                         </div>
                                     </div>
