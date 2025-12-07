@@ -45,9 +45,17 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
 
     // 削除ハンドラをラップして、削除後にリストを再取得
     const handleDeleteWithRefresh = async (id) => {
-        await onDelete(id);
-        // 削除後にリストを再取得
-        await fetchMyQuizzes();
+        try {
+            await onDelete(id);
+            // 削除後にリストを再取得（少し待ってから実行）
+            setTimeout(async () => {
+                await fetchMyQuizzes();
+            }, 100);
+        } catch (error) {
+            console.error('削除エラー:', error);
+            // エラーが発生してもリストを再取得（削除が部分的に成功した可能性があるため）
+            await fetchMyQuizzes();
+        }
     };
 
     useEffect(() => {
