@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false }) => {
+const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNavigate }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [isResetMode, setIsResetMode] = useState(false);
     const [isChangePasswordMode, setIsChangePasswordMode] = useState(isPasswordReset);
@@ -34,10 +34,26 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false }) => {
             if (error) throw error;
 
             if (isLogin && data.user) { 
-                setUser(data.user); onClose(); 
+                setUser(data.user); 
+                onClose();
+                // ログイン成功時にマイページにリダイレクト
+                if (onNavigate) {
+                    onNavigate('dashboard');
+                } else if (typeof window !== 'undefined' && window.location.pathname !== '/dashboard') {
+                    window.location.href = '/dashboard';
+                }
             } else if (!isLogin && data.user) {
                 if (!data.session) alert('確認メールを送信しました。メール内のリンクをクリックして認証を完了させてください。');
-                else { setUser(data.user); onClose(); }
+                else { 
+                    setUser(data.user); 
+                    onClose();
+                    // 新規登録後もログイン成功時と同様にマイページにリダイレクト
+                    if (onNavigate) {
+                        onNavigate('dashboard');
+                    } else if (typeof window !== 'undefined' && window.location.pathname !== '/dashboard') {
+                        window.location.href = '/dashboard';
+                    }
+                }
             }
         } catch (e) { alert(e.message); } finally { setLoading(false); }
     };

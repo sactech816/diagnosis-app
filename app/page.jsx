@@ -61,6 +61,14 @@ const App = () => {
                         window.history.replaceState(null, '', window.location.pathname);
                     }
                 }
+                // ログイン成功時にマイページにリダイレクト（パスワードリセット以外）
+                else if (event === 'SIGNED_IN' && session?.user && !currentHash?.includes('type=recovery')) {
+                    // 現在のパスがルートまたはローディング状態の場合のみリダイレクト
+                    const currentPath = window.location.pathname;
+                    if (currentPath === '/' || currentPath === '') {
+                        navigateTo('dashboard');
+                    }
+                }
               });
               
               // URLハッシュフラグメントをチェック（パスワードリセット用）
@@ -458,7 +466,7 @@ const App = () => {
           `}
         </Script>
         
-        <AuthModal isOpen={showAuth} onClose={()=>setShowAuth(false)} setUser={setUser} isPasswordReset={showPasswordReset} />
+        <AuthModal isOpen={showAuth} onClose={()=>setShowAuth(false)} setUser={setUser} isPasswordReset={showPasswordReset} onNavigate={(view) => navigateTo(view)} />
         
         {view === 'portal' && (
             <Portal 
