@@ -273,7 +273,7 @@ const App = () => {
 
 
   // 画面遷移ハンドラ
-  const navigateTo = (newView, params = {}) => {
+  const navigateTo = async (newView, params = {}) => {
       let url = '/';
       
       // 各ページに固有のパスを設定
@@ -294,6 +294,50 @@ const App = () => {
       };
       
       url = pathMap[newView] || '/';
+      
+      // クイズビューの場合、クイズデータを読み込む
+      if (newView === 'quiz' && params.id && supabase) {
+          try {
+              // slug(文字列)で検索
+              let { data, error: slugError } = await supabase.from('quizzes').select('*').eq('slug', params.id).single();
+              
+              // slugで見つからない場合、ID(数値)で検索（互換性のため）
+              if (!data && !isNaN(params.id)) {
+                 const res = await supabase.from('quizzes').select('*').eq('id', params.id).single();
+                 data = res.data;
+                 if (res.error && !res.data) {
+                     console.error('クイズ検索エラー:', res.error);
+                 }
+              } else if (slugError && !data) {
+                  // データがなく、エラーがある場合のみログ出力（レコードが見つからない場合は警告のみ）
+                  const isNotFoundError = slugError.message?.includes('No rows') || slugError.code === 'PGRST116';
+                  if (!isNotFoundError) {
+                      console.error('slug検索エラー:', slugError);
+                  }
+              }
+
+              if(data) { 
+                  setSelectedQuiz(data); 
+              } else {
+                  console.warn(`クイズが見つかりませんでした (id: ${params.id})`);
+                  // クイズが見つからない場合はポータルに戻る
+                  window.history.pushState({ view: 'portal' }, '', '/');
+                  setView('portal');
+                  setSelectedQuiz(null);
+                  return;
+              }
+          } catch (error) {
+              console.error('クイズ読み込みエラー:', error);
+              // エラーが発生した場合はポータルに戻る
+              window.history.pushState({ view: 'portal' }, '', '/');
+              setView('portal');
+              setSelectedQuiz(null);
+              return;
+          }
+      } else if (newView !== 'quiz') {
+          // クイズ以外のビューに遷移する場合は、selectedQuizをクリア
+          setSelectedQuiz(null);
+      }
       
       window.history.pushState({ view: newView, ...params }, '', url);
       setView(newView);
@@ -475,7 +519,7 @@ const App = () => {
                 user={user} 
                 isAdmin={isAdmin}
                 initialData={editingQuiz}
-                setPage={(p) => navigateTo(p)}
+                setPage={(p, params) => navigateTo(p, params || {})}
                 onBack={()=>{ navigateTo('portal'); setEditingQuiz(null);}} 
                 onSave={handleSave}
                 setShowAuth={setShowAuth}

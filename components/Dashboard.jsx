@@ -43,6 +43,13 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
         setMyQuizzes(quizzes || []);
     };
 
+    // 削除ハンドラをラップして、削除後にリストを再取得
+    const handleDeleteWithRefresh = async (id) => {
+        await onDelete(id);
+        // 削除後にリストを再取得
+        await fetchMyQuizzes();
+    };
+
     useEffect(() => {
         const init = async () => {
             if(!user) return;
@@ -662,7 +669,7 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                             )}
 
                                             <div className="flex gap-2 mb-2">
-                                                <button onClick={()=>onDelete(quiz.id)} className="w-full bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> 削除</button>
+                                                <button onClick={()=>handleDeleteWithRefresh(quiz.id)} className="w-full bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> 削除</button>
                                             </div>
                                             
                                             {isUnlocked ? (

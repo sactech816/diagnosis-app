@@ -647,8 +647,9 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                         <div className="flex gap-3">
                             <button 
                                 onClick={() => {
-                                    const url = `${window.location.origin}?id=${justSavedQuizId}`;
-                                    window.open(url, '_blank');
+                                    setShowDonationModal(false);
+                                    // クイズを表示するためにsetPageを使用
+                                    setPage('quiz', { id: justSavedQuizId });
                                 }}
                                 className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
                             >
