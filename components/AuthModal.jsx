@@ -31,7 +31,27 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
                     options: { emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined }
                   });
             
-            if (error) throw error;
+            if (error) {
+                // 重複メールアドレスのエラーハンドリング
+                if (!isLogin && (
+                    error.message.includes('already registered') || 
+                    error.message.includes('User already registered') ||
+                    error.message.includes('already been registered')
+                )) {
+                    alert(
+                        'このメールアドレスは既に登録されています。\n\n' +
+                        'ログイン画面に切り替えます。\n' +
+                        'パスワードを忘れた場合は「パスワードを忘れた方」をクリックしてください。'
+                    );
+                    // 自動的にログイン画面に切り替え
+                    setIsLogin(true);
+                    // パスワードのみクリア（メールアドレスは保持）
+                    setPassword('');
+                    setLoading(false);
+                    return;
+                }
+                throw error;
+            }
 
             if (isLogin && data.user) { 
                 setUser(data.user); 
@@ -55,7 +75,11 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
                     }
                 }
             }
-        } catch (e) { alert(e.message); } finally { setLoading(false); }
+        } catch (e) { 
+            alert('エラー: ' + e.message); 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     const handlePasswordReset = async (e) => {
