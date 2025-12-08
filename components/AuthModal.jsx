@@ -12,11 +12,26 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [resetSent, setResetSent] = useState(false);
+    const [resetEmailAddress, setResetEmailAddress] = useState('');
+    const [canResend, setCanResend] = useState(false);
+    const [resendCountdown, setResendCountdown] = useState(0);
     
     // isPasswordResetが変更されたときにisChangePasswordModeを更新
     useEffect(() => {
         setIsChangePasswordMode(isPasswordReset);
     }, [isPasswordReset]);
+    
+    // 再送信タイマー
+    useEffect(() => {
+        if (resendCountdown > 0) {
+            const timer = setTimeout(() => {
+                setResendCountdown(resendCountdown - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else if (resendCountdown === 0 && resetSent) {
+            setCanResend(true);
+        }
+    }, [resendCountdown, resetSent]);
     
     if (!isOpen && !isPasswordReset) return null;
     
@@ -82,7 +97,7 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
         }
     };
 
-    const handlePasswordReset = async (e) => {
+    const handlePasswordReset = async (e, isResend = false) => {
         e.preventDefault();
         if (!email) {
             alert('メールアドレスを入力してください。');
@@ -97,10 +112,30 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: redirectUrl,
             });
-            if (error) throw error;
+            
+            // エラーハンドリングの強化
+            if (error) {
+                // セキュリティのため、詳細なエラーは表示せず一般的なメッセージを表示
+                console.error('Password reset error:', error);
+                // ただし、ユーザーには成功メッセージを表示（メールアドレスの存在を推測されないため）
+            }
+            
+            // 成功時の処理
             setResetSent(true);
+            setResetEmailAddress(email);
+            setCanResend(false);
+            setResendCountdown(60); // 60秒後に再送信可能
+            
+            if (isResend) {
+                alert('パスワードリセットメールを再送信しました。');
+            }
         } catch (e) {
-            alert('エラー: ' + e.message);
+            // エラーの場合でも、セキュリティのため成功メッセージを表示
+            console.error('Password reset error:', e);
+            setResetSent(true);
+            setResetEmailAddress(email);
+            setCanResend(false);
+            setResendCountdown(60);
         } finally {
             setLoading(false);
         }
@@ -179,45 +214,92 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
     if (isResetMode) {
         return (
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-                <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl relative animate-fade-in">
-                    <button onClick={() => { setIsResetMode(false); setResetSent(false); setEmail(''); }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X/></button>
+                <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative animate-fade-in">
+                    <button onClick={() => { setIsResetMode(false); setResetSent(false); setEmail(''); setCanResend(false); setResendCountdown(0); }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X/></button>
                     <h2 className="text-xl font-bold mb-6 text-center text-gray-900">パスワードリセット</h2>
                     {resetSent ? (
                         <div className="text-center space-y-4">
                             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                <p className="text-sm text-green-800 font-bold">
-                                    パスワードリセット用のメールを送信しました。<br/>
-                                    メール内のリンクをクリックして、新しいパスワードを設定してください。
+                                <p className="text-sm text-green-800 font-bold mb-2">
+                                    パスワードリセット用のメールを送信しました。
+                                </p>
+                                <p className="text-xs text-green-700">
+                                    送信先: <span className="font-mono">{resetEmailAddress}</span>
                                 </p>
                             </div>
+                            
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                                <p className="text-xs text-blue-900 font-bold mb-2">📧 メール内のリンクをクリック</p>
+                                <p className="text-xs text-blue-800 mb-3">
+                                    メール内のリンクをクリックして、新しいパスワードを設定してください。
+                                </p>
+                                <p className="text-xs text-blue-900 font-bold mb-2">⏰ メールが届かない場合</p>
+                                <ul className="text-xs text-blue-800 space-y-1 ml-4 list-disc">
+                                    <li>迷惑メールフォルダをご確認ください</li>
+                                    <li>メールアドレスが正しいかご確認ください</li>
+                                    <li>数分待ってから再送信をお試しください</li>
+                                </ul>
+                            </div>
+
+                            {/* 再送信ボタン */}
                             <button 
-                                onClick={() => { setIsResetMode(false); setResetSent(false); setEmail(''); }}
+                                onClick={(e) => handlePasswordReset(e, true)}
+                                disabled={!canResend || loading}
+                                className={`w-full font-bold py-3 rounded-lg transition-colors ${
+                                    canResend && !loading
+                                        ? 'bg-green-600 text-white hover:bg-green-700'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                }`}
+                            >
+                                {loading ? '送信中...' : canResend ? 'メールを再送信' : `再送信可能まで ${resendCountdown}秒`}
+                            </button>
+
+                            {/* 管理者への連絡 */}
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <p className="text-xs text-yellow-900 mb-2">
+                                    <span className="font-bold">💡 それでも解決しない場合</span>
+                                </p>
+                                <p className="text-xs text-yellow-800 mb-2">
+                                    お手数ですが、以下の連絡先までお問い合わせください。
+                                </p>
+                                <p className="text-xs text-yellow-900 font-mono bg-white px-2 py-1 rounded">
+                                    サポート: support@example.com
+                                </p>
+                            </div>
+                            
+                            <button 
+                                onClick={() => { setIsResetMode(false); setResetSent(false); setEmail(''); setCanResend(false); setResendCountdown(0); }}
                                 className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors"
                             >
                                 ログイン画面に戻る
                             </button>
                         </div>
                     ) : (
-                        <form onSubmit={handlePasswordReset} className="space-y-4">
-                            <p className="text-sm text-gray-600 mb-4">
-                                登録済みのメールアドレスを入力してください。<br/>
-                                パスワードリセット用のリンクを送信します。
-                            </p>
+                        <form onSubmit={(e) => handlePasswordReset(e, false)} className="space-y-4">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="text-sm text-blue-900 font-bold mb-2">
+                                    パスワードをお忘れですか？
+                                </p>
+                                <p className="text-xs text-blue-800">
+                                    登録済みのメールアドレスを入力してください。<br/>
+                                    パスワードリセット用のリンクを送信します。
+                                </p>
+                            </div>
                             <input 
                                 type="email" 
                                 required 
                                 value={email} 
                                 onChange={e=>setEmail(e.target.value)} 
                                 className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900" 
-                                placeholder="Email" 
+                                placeholder="登録済みのメールアドレス" 
                             />
-                            <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors">
+                            <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
                                 {loading ? '送信中...' : 'リセットメールを送信'}
                             </button>
                             <button 
                                 type="button"
                                 onClick={() => { setIsResetMode(false); setEmail(''); }} 
-                                className="w-full text-center text-sm text-gray-600 font-bold underline"
+                                className="w-full text-center text-sm text-gray-600 font-bold underline hover:text-gray-800"
                             >
                                 ログイン画面に戻る
                             </button>
