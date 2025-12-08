@@ -146,6 +146,9 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                             <button onClick={handleCreate} className="bg-white text-indigo-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2 transform hover:scale-105">
                                 <Sparkles size={20} className="text-yellow-500"/> 今すぐ診断を作る
                             </button>
+                            <button onClick={()=>window.location.href='/demo-quiz'} className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-4 rounded-full font-bold text-lg hover:from-pink-600 hover:to-purple-600 transition-all shadow-lg flex items-center justify-center gap-2 transform hover:scale-105">
+                                <Play size={20}/> デモを試す
+                            </button>
                             <button onClick={()=>setPage('effective')} className="bg-indigo-700/50 border border-indigo-400/50 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-indigo-700/80 transition-all flex items-center justify-center gap-2">
                                 <TrendingUp size={20}/> 活用事例を見る
                             </button>

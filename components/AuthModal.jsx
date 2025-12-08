@@ -54,7 +54,8 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
                     error.message.includes('already been registered')
                 )) {
                     alert(
-                        'このメールアドレスは既に登録されています。\n\n' +
+                        '【重要】このメールアドレスは既に登録されています。\n\n' +
+                        '※メールは送信されていません。\n\n' +
                         'ログイン画面に切り替えます。\n' +
                         'パスワードを忘れた場合は「パスワードを忘れた方」をクリックしてください。'
                     );
@@ -105,11 +106,14 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
         }
         setLoading(true);
         try {
+            // リダイレクトURLをルートに設定（パスワードリセット処理を確実に行うため）
             const redirectUrl = typeof window !== 'undefined' 
-                ? `${window.location.origin}${window.location.pathname}` 
+                ? `${window.location.origin}/` 
                 : undefined;
             
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            console.log('パスワードリセットメール送信:', email, 'リダイレクト先:', redirectUrl);
+            
+            const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: redirectUrl,
             });
             
@@ -118,6 +122,8 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
                 // セキュリティのため、詳細なエラーは表示せず一般的なメッセージを表示
                 console.error('Password reset error:', error);
                 // ただし、ユーザーには成功メッセージを表示（メールアドレスの存在を推測されないため）
+            } else {
+                console.log('パスワードリセットメール送信成功:', data);
             }
             
             // 成功時の処理
@@ -157,17 +163,36 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
         }
         setLoading(true);
         try {
-            const { error } = await supabase.auth.updateUser({
+            console.log('パスワード更新を開始します');
+            const { data, error } = await supabase.auth.updateUser({
                 password: newPassword
             });
-            if (error) throw error;
-            alert('パスワードを変更しました。ログインしてください。');
+            
+            if (error) {
+                console.error('パスワード更新エラー:', error);
+                throw error;
+            }
+            
+            console.log('パスワード更新成功:', data);
+            alert('パスワードを変更しました。\n\n新しいパスワードでログインできます。');
+            
+            // 状態をリセット
             setIsChangePasswordMode(false);
             setNewPassword('');
             setConfirmPassword('');
+            
+            // モーダルを閉じる
             if (onClose) onClose();
+            
+            // マイページにリダイレクト
+            if (onNavigate) {
+                onNavigate('dashboard');
+            } else if (typeof window !== 'undefined') {
+                window.location.href = '/dashboard';
+            }
         } catch (e) {
-            alert('エラー: ' + e.message);
+            console.error('パスワード変更エラー:', e);
+            alert('パスワード変更エラー: ' + e.message + '\n\nもう一度お試しください。');
         } finally {
             setLoading(false);
         }

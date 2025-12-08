@@ -88,16 +88,28 @@ const App = () => {
           if(supabase) {
               // 認証状態の変更を監視（最初に設定）
               supabase.auth.onAuthStateChange((event, session) => {
+                console.log('認証状態変更:', event, session?.user?.email);
                 setUser(session?.user || null);
                 
                 // パスワードリセット後のセッション変更を検知
                 const currentHash = window.location.hash;
                 if (currentHash && currentHash.includes('type=recovery')) {
+                    console.log('パスワードリセット処理（onAuthStateChange）');
                     if (session?.user) {
                         // パスワード変更画面を表示
                         setShowPasswordReset(true);
+                        setShowAuth(true); // AuthModalを表示
                         setView('portal');
                         window.history.replaceState(null, '', window.location.pathname);
+                    }
+                }
+                // パスワード更新成功時の処理
+                else if (event === 'PASSWORD_RECOVERY') {
+                    console.log('パスワードリカバリーイベント検出');
+                    if (session?.user) {
+                        setShowPasswordReset(true);
+                        setShowAuth(true);
+                        setView('portal');
                     }
                 }
                 // ログイン成功時にマイページにリダイレクト（パスワードリセット以外）
@@ -122,6 +134,7 @@ const App = () => {
               
               // パスワードリセットリンクから来た場合の処理
               if (hash && hash.includes('type=recovery')) {
+                  console.log('パスワードリセットリンクを検出しました');
                   // まずポータルページを表示
                   setView('portal');
                   
@@ -130,16 +143,20 @@ const App = () => {
                   // 少し待ってからセッションを確認（Supabaseがハッシュを処理する時間を確保）
                   setTimeout(async () => {
                       try {
+                          // まずハッシュからセッションを確立
                           const {data:{session}, error} = await supabase.auth.getSession();
                           
                           if (error) {
                               console.error('パスワードリセットセッションエラー:', error);
-                              alert('パスワードリセットリンクが無効または期限切れです。');
+                              alert('パスワードリセットリンクが無効または期限切れです。\n\n新しいパスワードリセットメールをリクエストしてください。');
                               window.history.replaceState(null, '', window.location.pathname);
+                              setView('portal');
                           } else if (session?.user) {
                               // セッションが確立されている場合、パスワード変更画面を表示
+                              console.log('パスワードリセットセッション確立:', session.user.email);
                               setUser(session.user);
                               setShowPasswordReset(true);
+                              setShowAuth(true); // AuthModalを表示
                               // ハッシュをクリア
                               window.history.replaceState(null, '', window.location.pathname);
                           } else {
@@ -148,10 +165,11 @@ const App = () => {
                           }
                       } catch (e) {
                           console.error('パスワードリセット処理エラー:', e);
-                          alert('パスワードリセット処理中にエラーが発生しました。');
+                          alert('パスワードリセット処理中にエラーが発生しました。\n\nもう一度パスワードリセットをリクエストしてください。');
                           window.history.replaceState(null, '', window.location.pathname);
+                          setView('portal');
                       }
-                  }, 1000);
+                  }, 1500); // 1.5秒待つ（Supabaseの処理時間を確保）
               } else {
                   // 通常のセッション確認
                   const {data:{session}} = await supabase.auth.getSession();
