@@ -50,8 +50,33 @@ const App = () => {
           const params = new URLSearchParams(window.location.search);
           const id = params.get('id');
           
+          // URLハッシュとクエリパラメータを確認（パスワードリセット用）
+          const hash = window.location.hash;
+          const searchParams = new URLSearchParams(window.location.search);
+          const token = searchParams.get('token');
+          const type = searchParams.get('type');
+          const isRecovery = (hash && hash.includes('type=recovery')) || 
+                            type === 'recovery' ||
+                            token !== null;
+          
+          console.log('🔍 初期化: URL詳細チェック', { 
+              fullUrl: window.location.href,
+              pathname: window.location.pathname,
+              search: window.location.search,
+              hash: window.location.hash,
+              token: token,
+              type: type,
+              isRecovery: isRecovery
+          });
+          
+          // パスワードリセットの場合は最優先で処理
+          if (isRecovery) {
+              console.log('🔐 パスワードリセットモードを検出しました');
+              setView('portal');
+              // クイズIDチェックをスキップ
+          }
           // クイズIDがある場合は、認証処理より先にクイズを読み込む
-          if (id && supabase) {
+          else if (id && supabase) {
               console.log('初期化: クイズIDを検出しました:', id);
               try {
                   // slug(文字列)で検索
@@ -86,18 +111,25 @@ const App = () => {
           
           // ユーザーセッションの確認
           if(supabase) {
-              // URLハッシュフラグメントをチェック（パスワードリセット用）
+              // URLハッシュフラグメントとクエリパラメータをチェック（パスワードリセット用）
               const hash = window.location.hash;
+              const searchParams = new URLSearchParams(window.location.search);
+              const isRecovery = (hash && hash.includes('type=recovery')) || 
+                                searchParams.get('type') === 'recovery' ||
+                                searchParams.get('token');
+              
+              console.log('🔍 初期化: URLチェック', { hash, search: window.location.search, isRecovery });
               
               // 認証状態の変更を監視（最初に設定）
-              supabase.auth.onAuthStateChange((event, session) => {
-                console.log('認証状態変更:', event, session?.user?.email);
+              supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log('🔔 認証状態変更:', event, session?.user?.email);
                 setUser(session?.user || null);
                 
                 // パスワードリセット後のセッション変更を検知
                 if (event === 'PASSWORD_RECOVERY') {
-                    console.log('パスワードリカバリーイベント検出');
+                    console.log('✅ パスワードリカバリーイベント検出');
                     if (session?.user) {
+                        console.log('👤 ユーザーセッション確立:', session.user.email);
                         setShowPasswordReset(true);
                         setShowAuth(true);
                         setView('portal');
@@ -108,35 +140,67 @@ const App = () => {
                 // ログイン成功時にマイページにリダイレクト（パスワードリセット以外）
                 else if (event === 'SIGNED_IN' && session?.user) {
                     const currentHash = window.location.hash;
-                    if (currentHash && currentHash.includes('type=recovery')) {
+                    const currentSearch = new URLSearchParams(window.location.search);
+                    const isRecoveryNow = (currentHash && currentHash.includes('type=recovery')) || 
+                                         currentSearch.get('type') === 'recovery' ||
+                                         currentSearch.get('token');
+                    if (isRecoveryNow) {
                         // パスワードリセット中の場合はリダイレクトしない
-                        console.log('パスワードリセット中のため、リダイレクトをスキップ');
+                        console.log('⏸️ パスワードリセット中のため、リダイレクトをスキップ');
                         return;
                     }
                     // クイズIDがある場合はリダイレクトしない
-                    const params = new URLSearchParams(window.location.search);
-                    const id = params.get('id');
-                    if (id) {
+                    const quizId = currentSearch.get('id');
+                    if (quizId) {
                         // クイズIDがある場合は、クイズを表示するためリダイレクトしない
                         return;
                     }
                     // 現在のパスがルートまたはローディング状態の場合のみリダイレクト
                     const currentPath = window.location.pathname;
                     if (currentPath === '/' || currentPath === '') {
+                        console.log('🏠 マイページにリダイレクト');
                         navigateTo('dashboard');
                     }
                 }
               });
               
               // パスワードリセットリンクから来た場合の処理
-              if (hash && hash.includes('type=recovery')) {
-                  console.log('パスワードリセットリンクを検出しました:', hash);
+              if (isRecovery) {
+                  console.log('🔐 パスワードリセットリンクを検出しました:', { hash, search: window.location.search });
+                  console.log('📍 現在のURL:', window.location.href);
+                  
                   // まずポータルページを表示
                   setView('portal');
                   
-                  // Supabaseが自動的にハッシュからトークンを処理する
-                  // onAuthStateChangeで PASSWORD_RECOVERY イベントが発火するのを待つ
-                  console.log('onAuthStateChangeでPASSWORD_RECOVERYイベントを待機中...');
+                  // 少し待ってからセッションを確立（Supabaseが処理する時間を確保）
+                  setTimeout(async () => {
+                      try {
+                          console.log('⏳ セッション確立を試みます...');
+                          // getSessionを呼び出すことで、URLハッシュからトークンが処理される
+                          const { data: { session }, error } = await supabase.auth.getSession();
+                          
+                          console.log('📊 パスワードリセット: セッション確認結果', { 
+                              hasSession: !!session, 
+                              hasUser: !!session?.user,
+                              userEmail: session?.user?.email,
+                              error: error 
+                          });
+                          
+                          if (session?.user) {
+                              console.log('✅ パスワードリセット: セッション確立成功、パスワード変更画面を表示');
+                              setUser(session.user);
+                              setShowPasswordReset(true);
+                              setShowAuth(true);
+                              // ハッシュとクエリパラメータをクリア
+                              window.history.replaceState(null, '', window.location.pathname);
+                          } else {
+                              console.log('⏳ パスワードリセット: onAuthStateChangeイベントを待機中...');
+                              // onAuthStateChangeで PASSWORD_RECOVERY イベントが発火するのを待つ
+                          }
+                      } catch (e) {
+                          console.error('❌ パスワードリセット: セッション確立エラー', e);
+                      }
+                  }, 500); // 500ms待機
               } else {
                   // 通常のセッション確認
                   const {data:{session}} = await supabase.auth.getSession();

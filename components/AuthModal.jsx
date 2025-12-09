@@ -47,12 +47,16 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
                   });
             
             if (error) {
+                console.log('認証エラー詳細:', error);
                 // 重複メールアドレスのエラーハンドリング
                 if (!isLogin && (
                     error.message.includes('already registered') || 
                     error.message.includes('User already registered') ||
-                    error.message.includes('already been registered')
+                    error.message.includes('already been registered') ||
+                    error.status === 422 || // Supabaseの重複エラーステータス
+                    error.code === '23505' // PostgreSQLの重複エラーコード
                 )) {
+                    console.log('重複メールエラーを検出しました。ログインを試みます。');
                     // パスワードが合っているか試してみる
                     const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ 
                         email, 
@@ -89,6 +93,38 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
                     }
                 }
                 throw error;
+            }
+            
+            // 新規登録の場合、エラーがなくてもユーザーが既に存在する可能性がある
+            // （Supabaseの設定によっては重複登録を許可する場合がある）
+            if (!isLogin && data.user) {
+                // セッションがない場合は確認メールが送信された
+                if (!data.session) {
+                    // メールが本当に送信されたか確認するため、ユーザーが既に存在するかチェック
+                    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ 
+                        email, 
+                        password 
+                    });
+                    
+                    if (!loginError && loginData.user) {
+                        // ユーザーが既に存在し、パスワードが合っている
+                        alert('このメールアドレスは既に登録されています。\n\n自動的にログインしました。');
+                        setUser(loginData.user);
+                        onClose();
+                        if (onNavigate) {
+                            onNavigate('dashboard');
+                        } else if (typeof window !== 'undefined' && window.location.pathname !== '/dashboard') {
+                            window.location.href = '/dashboard';
+                        }
+                        setLoading(false);
+                        return;
+                    } else {
+                        // 新規登録で確認メールが送信された
+                        alert('確認メールを送信しました。メール内のリンクをクリックして認証を完了させてください。');
+                        setLoading(false);
+                        return;
+                    }
+                }
             }
 
             if (isLogin && data.user) { 
