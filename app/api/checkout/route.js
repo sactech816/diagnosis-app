@@ -14,7 +14,7 @@ export async function POST(req) {
     
     // ★サーバー側でも安全のため価格チェック（無効なら1000円にする）
     let finalPrice = parseInt(price);
-    if (isNaN(finalPrice) || finalPrice < 1000 || finalPrice > 100000) {
+    if (isNaN(finalPrice) || finalPrice < 10 || finalPrice > 100000) {
         finalPrice = 1000;
     }
 
