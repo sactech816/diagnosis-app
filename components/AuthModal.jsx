@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowPasswordReset, onNavigate }) => {
@@ -15,6 +15,11 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowP
     const [resetEmailAddress, setResetEmailAddress] = useState('');
     const [canResend, setCanResend] = useState(false);
     const [resendCountdown, setResendCountdown] = useState(0);
+    
+    // パスワード表示/非表示の状態
+    const [showPassword, setShowPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     
     // isPasswordResetが変更されたときにisChangePasswordModeを更新
     useEffect(() => {
@@ -166,7 +171,27 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowP
                 }
             }
         } catch (e) { 
-            alert('エラー: ' + e.message); 
+            console.error('認証エラー:', e);
+            
+            // エラーメッセージをユーザーフレンドリーに変換
+            let errorMessage = 'エラー';
+            
+            if (e.message.includes('Invalid login credentials') || 
+                e.message.includes('Invalid email or password')) {
+                errorMessage = isLogin 
+                    ? 'メールアドレスまたはパスワードが正しくありません。\n\nパスワードを忘れた場合は「パスワードを忘れた方」をクリックしてください。'
+                    : 'メールアドレスまたはパスワードが正しくありません。';
+            } else if (e.message.includes('Email not confirmed')) {
+                errorMessage = 'メールアドレスが確認されていません。\n\n確認メールをご確認ください。';
+            } else if (e.message.includes('User not found')) {
+                errorMessage = 'このメールアドレスは登録されていません。';
+            } else if (e.message.includes('Email rate limit exceeded')) {
+                errorMessage = '送信回数が上限に達しました。\n\nしばらく時間をおいてから再度お試しください。';
+            } else {
+                errorMessage = 'エラー: ' + e.message;
+            }
+            
+            alert(errorMessage);
         } finally { 
             setLoading(false); 
         }
@@ -321,24 +346,49 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowP
                         <p className="text-sm text-gray-600 mb-4">
                             新しいパスワードを入力してください。
                         </p>
-                        <input 
-                            type="password" 
-                            required 
-                            value={newPassword} 
-                            onChange={e=>setNewPassword(e.target.value)} 
-                            className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900" 
-                            placeholder="新しいパスワード" 
-                            minLength={6}
-                        />
-                        <input 
-                            type="password" 
-                            required 
-                            value={confirmPassword} 
-                            onChange={e=>setConfirmPassword(e.target.value)} 
-                            className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900" 
-                            placeholder="パスワード（確認）" 
-                            minLength={6}
-                        />
+                        
+                        {/* 新しいパスワード入力欄（表示/非表示ボタン付き） */}
+                        <div className="relative">
+                            <input 
+                                type={showNewPassword ? "text" : "password"} 
+                                required 
+                                value={newPassword} 
+                                onChange={e=>setNewPassword(e.target.value)} 
+                                className="w-full border border-gray-300 p-3 pr-12 rounded-lg bg-gray-50 text-gray-900" 
+                                placeholder="新しいパスワード" 
+                                minLength={6}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                tabIndex={-1}
+                            >
+                                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+                        
+                        {/* パスワード確認入力欄（表示/非表示ボタン付き） */}
+                        <div className="relative">
+                            <input 
+                                type={showConfirmPassword ? "text" : "password"} 
+                                required 
+                                value={confirmPassword} 
+                                onChange={e=>setConfirmPassword(e.target.value)} 
+                                className="w-full border border-gray-300 p-3 pr-12 rounded-lg bg-gray-50 text-gray-900" 
+                                placeholder="パスワード（確認）" 
+                                minLength={6}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                tabIndex={-1}
+                            >
+                                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+                        
                         <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors">
                             {loading ? '処理中...' : 'パスワードを変更'}
                         </button>
@@ -455,7 +505,27 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowP
                 <h2 className="text-xl font-bold mb-6 text-center text-gray-900">{isLogin ? 'ログイン' : '新規登録'}</h2>
                 <form onSubmit={handleAuth} className="space-y-4">
                     <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900" placeholder="Email" />
-                    <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900" placeholder="Password" />
+                    
+                    {/* パスワード入力欄（表示/非表示ボタン付き） */}
+                    <div className="relative">
+                        <input 
+                            type={showPassword ? "text" : "password"} 
+                            required 
+                            value={password} 
+                            onChange={e=>setPassword(e.target.value)} 
+                            className="w-full border border-gray-300 p-3 pr-12 rounded-lg bg-gray-50 text-gray-900" 
+                            placeholder="Password" 
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            tabIndex={-1}
+                        >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                    </div>
+                    
                     {isLogin && (
                         <button 
                             type="button"
