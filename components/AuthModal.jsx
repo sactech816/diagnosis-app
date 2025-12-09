@@ -53,18 +53,40 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
                     error.message.includes('User already registered') ||
                     error.message.includes('already been registered')
                 )) {
-                    alert(
-                        '【重要】このメールアドレスは既に登録されています。\n\n' +
-                        '※メールは送信されていません。\n\n' +
-                        'ログイン画面に切り替えます。\n' +
-                        'パスワードを忘れた場合は「パスワードを忘れた方」をクリックしてください。'
-                    );
-                    // 自動的にログイン画面に切り替え
-                    setIsLogin(true);
-                    // パスワードのみクリア（メールアドレスは保持）
-                    setPassword('');
-                    setLoading(false);
-                    return;
+                    // パスワードが合っているか試してみる
+                    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ 
+                        email, 
+                        password 
+                    });
+                    
+                    if (!loginError && loginData.user) {
+                        // パスワードが合っていた場合、自動的にログイン
+                        alert('このメールアドレスは既に登録されています。\n\n自動的にログインしました。');
+                        setUser(loginData.user);
+                        onClose();
+                        // ログイン成功時にマイページにリダイレクト
+                        if (onNavigate) {
+                            onNavigate('dashboard');
+                        } else if (typeof window !== 'undefined' && window.location.pathname !== '/dashboard') {
+                            window.location.href = '/dashboard';
+                        }
+                        setLoading(false);
+                        return;
+                    } else {
+                        // パスワードが間違っている場合、ログイン画面に切り替え
+                        alert(
+                            '【重要】このメールアドレスは既に登録されています。\n\n' +
+                            '※メールは送信されていません。\n\n' +
+                            'ログイン画面に切り替えます。\n' +
+                            'パスワードを忘れた場合は「パスワードを忘れた方」をクリックしてください。'
+                        );
+                        // 自動的にログイン画面に切り替え
+                        setIsLogin(true);
+                        // パスワードのみクリア（メールアドレスは保持）
+                        setPassword('');
+                        setLoading(false);
+                        return;
+                    }
                 }
                 throw error;
             }
@@ -107,8 +129,9 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
         setLoading(true);
         try {
             // リダイレクトURLをルートに設定（パスワードリセット処理を確実に行うため）
+            // Supabaseは自動的に #access_token=...&type=recovery をURLに追加します
             const redirectUrl = typeof window !== 'undefined' 
-                ? `${window.location.origin}/` 
+                ? `${window.location.origin}` 
                 : undefined;
             
             console.log('パスワードリセットメール送信:', email, 'リダイレクト先:', redirectUrl);
