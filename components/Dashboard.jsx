@@ -61,17 +61,19 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
     useEffect(() => {
         const init = async () => {
             if(!user) return;
-            await fetchMyQuizzes();
-
-            const { data: bought } = await supabase.from('purchases').select('quiz_id').eq('user_id', user.id);
-            setPurchases(bought?.map(p => p.quiz_id) || []);
-
+            
+            // 決済成功時の処理を最初に実行
             const params = new URLSearchParams(window.location.search);
             if (params.get('payment') === 'success' && params.get('session_id')) {
                 const quizId = params.get('quiz_id');
                 await verifyPayment(params.get('session_id'), quizId);
                 window.history.replaceState(null, '', window.location.pathname);
             }
+
+            // クイズと購入履歴を取得
+            await fetchMyQuizzes();
+            const { data: bought } = await supabase.from('purchases').select('quiz_id').eq('user_id', user.id);
+            setPurchases(bought?.map(p => p.quiz_id) || []);
 
             // 管理者の場合、お知らせを取得
             if (isAdmin) {
@@ -85,17 +87,33 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
 
     const verifyPayment = async (sessionId, quizId) => {
         try {
+            console.log('🔍 決済検証開始:', { sessionId, quizId, userId: user.id });
             const res = await fetch('/api/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, quizId, userId: user.id }),
             });
+            
+            const data = await res.json();
+            console.log('✅ 決済検証レスポンス:', data);
+            
             if (res.ok) {
+                // 購入履歴を再取得して確実に反映
+                const { data: bought, error } = await supabase.from('purchases').select('quiz_id').eq('user_id', user.id);
+                if (error) {
+                    console.error('❌ 購入履歴の取得エラー:', error);
+                } else {
+                    console.log('📋 購入履歴を更新:', bought);
+                    setPurchases(bought?.map(p => p.quiz_id) || []);
+                }
                 alert('寄付ありがとうございます！Pro機能（HTML・埋め込み・リスト）が開放されました。');
-                setPurchases(prev => [...prev, parseInt(quizId)]);
+            } else {
+                console.error('❌ 決済検証失敗:', data);
+                alert('決済の確認に失敗しました。お手数ですが、ページを再読み込みしてください。');
             }
         } catch (e) {
-            console.error(e);
+            console.error('❌ 決済検証エラー:', e);
+            alert('エラーが発生しました: ' + e.message);
         }
     };
 

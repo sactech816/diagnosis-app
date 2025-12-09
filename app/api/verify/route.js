@@ -13,31 +13,48 @@ const supabaseAdmin = createClient(
 export async function POST(req) {
   try {
     const { sessionId, quizId, userId } = await req.json();
+    console.log('🔍 決済検証リクエスト:', { sessionId, quizId, userId });
 
     // 1. Stripeに問い合わせて、本当に支払い済みか確認
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('💳 Stripe決済ステータス:', session.payment_status);
+    
     if (session.payment_status !== 'paid') {
-      return NextResponse.json({ error: 'Not paid' }, { status: 400 });
+      console.error('❌ 決済未完了:', session.payment_status);
+      return NextResponse.json({ error: 'Payment not completed', status: session.payment_status }, { status: 400 });
     }
 
-    // 2. Supabaseに購入履歴を記録（管理者権限で実行）
+    // 2. 既に記録済みかチェック（重複防止）
+    const { data: existing } = await supabaseAdmin
+      .from('purchases')
+      .select('id')
+      .eq('stripe_session_id', sessionId)
+      .single();
+
+    if (existing) {
+      console.log('ℹ️ 既に記録済みの決済:', sessionId);
+      return NextResponse.json({ success: true, message: 'Already recorded' });
+    }
+
+    // 3. Supabaseに購入履歴を記録（管理者権限で実行）
     const { data, error } = await supabaseAdmin.from('purchases').insert([
       {
         user_id: userId,
-        quiz_id: quizId,
+        quiz_id: parseInt(quizId),
         stripe_session_id: sessionId,
         amount: session.amount_total
       }
-    ]);
+    ]).select();
 
     if (error) {
-        console.error("Supabase Insert Error:", error);
+        console.error("❌ Supabase挿入エラー:", error);
         throw error;
     }
 
-    return NextResponse.json({ success: true });
+    console.log('✅ 購入履歴を記録:', data);
+    return NextResponse.json({ success: true, data });
   } catch (err) {
-    console.error("Verify API Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("❌ Verify API エラー:", err);
+    return NextResponse.json({ error: err.message, details: err }, { status: 500 });
   }
 }
