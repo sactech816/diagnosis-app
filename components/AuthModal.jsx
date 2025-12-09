@@ -347,7 +347,7 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
                                     お手数ですが、以下の連絡先までお問い合わせください。
                                 </p>
                                 <p className="text-xs text-yellow-900 font-mono bg-white px-2 py-1 rounded">
-                                    サポート: support@example.com
+                                    サポート: support@makers.tokyo
                                 </p>
                             </div>
                             

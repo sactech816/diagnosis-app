@@ -55,6 +55,7 @@ const App = () => {
           const searchParams = new URLSearchParams(window.location.search);
           const token = searchParams.get('token');
           const type = searchParams.get('type');
+          const redirectTo = searchParams.get('redirect_to');
           const isRecovery = (hash && hash.includes('type=recovery')) || 
                             type === 'recovery' ||
                             token !== null;
@@ -64,10 +65,23 @@ const App = () => {
               pathname: window.location.pathname,
               search: window.location.search,
               hash: window.location.hash,
-              token: token,
+              token: token ? '***' : null, // トークンは隠す
               type: type,
+              redirectTo: redirectTo,
               isRecovery: isRecovery
           });
+          
+          // Supabaseの verify エンドポイントから直接リダイレクトされた場合
+          // トークンとタイプがクエリパラメータに含まれている場合、ハッシュフラグメントに変換
+          if (token && type === 'recovery' && !hash) {
+              console.log('🔄 クエリパラメータからハッシュフラグメントに変換します');
+              // access_tokenとrefresh_tokenをハッシュに変換
+              const newHash = `#access_token=${token}&type=recovery`;
+              window.location.hash = newHash;
+              console.log('✅ ハッシュフラグメントを設定しました:', newHash);
+              // ページをリロードして、Supabaseが新しいハッシュを処理できるようにする
+              return;
+          }
           
           // パスワードリセットの場合は最優先で処理
           if (isRecovery) {
@@ -172,6 +186,59 @@ const App = () => {
                   // まずポータルページを表示
                   setView('portal');
                   
+                  // クエリパラメータにトークンがある場合は、verifyOtpで検証
+                  if (token && type === 'recovery') {
+                      console.log('🔑 クエリパラメータのトークンを検証します');
+                      try {
+                          const { data, error } = await supabase.auth.verifyOtp({
+                              token_hash: token,
+                              type: 'recovery',
+                          });
+                          
+                          console.log('📊 verifyOtp結果:', { 
+                              hasSession: !!data?.session, 
+                              hasUser: !!data?.user,
+                              error: error 
+                          });
+                          
+                          if (error) {
+                              console.error('❌ トークン検証エラー:', error);
+                              alert(
+                                  'パスワードリセットリンクが無効または期限切れです。\n\n' +
+                                  'エラー: ' + error.message + '\n\n' +
+                                  '新しいパスワードリセットメールをリクエストしてください。\n' +
+                                  'それでも解決しない場合は support@makers.tokyo にお問い合わせください'
+                              );
+                              // クエリパラメータをクリア
+                              window.history.replaceState(null, '', window.location.pathname);
+                              setView('portal');
+                              return;
+                          }
+                          
+                          if (data?.session?.user) {
+                              console.log('✅ トークン検証成功、パスワード変更画面を表示');
+                              setUser(data.session.user);
+                              setShowPasswordReset(true);
+                              setShowAuth(true);
+                              // クエリパラメータをクリア
+                              window.history.replaceState(null, '', window.location.pathname);
+                              return;
+                          }
+                      } catch (e) {
+                          console.error('❌ verifyOtpエラー:', e);
+                          alert(
+                              'パスワードリセット処理中にエラーが発生しました。\n\n' +
+                              'エラー: ' + e.message + '\n\n' +
+                              '新しいパスワードリセットメールをリクエストしてください。\n' +
+                              'それでも解決しない場合は support@makers.tokyo にお問い合わせください'
+                          );
+                          window.history.replaceState(null, '', window.location.pathname);
+                          setView('portal');
+                          return;
+                      }
+                  }
+                  
+                  // ハッシュフラグメントがある場合の処理
                   // 少し待ってからセッションを確立（Supabaseが処理する時間を確保）
                   setTimeout(async () => {
                       try {
@@ -186,6 +253,21 @@ const App = () => {
                               error: error 
                           });
                           
+                          if (error) {
+                              console.error('❌ セッション確立エラー:', error);
+                              // エラーの詳細をユーザーに表示
+                              alert(
+                                  'パスワードリセットリンクの処理中にエラーが発生しました。\n\n' +
+                                  'エラー: ' + (error.message || JSON.stringify(error)) + '\n\n' +
+                                  '以下をお試しください:\n' +
+                                  '1. パスワードリセットメールを再送信\n' +
+                                  '2. メールのリンクを再度クリック\n' +
+                                  '3. それでも解決しない場合は support@makers.tokyo にお問い合わせください'
+                              );
+                              setView('portal');
+                              return;
+                          }
+                          
                           if (session?.user) {
                               console.log('✅ パスワードリセット: セッション確立成功、パスワード変更画面を表示');
                               setUser(session.user);
@@ -196,9 +278,28 @@ const App = () => {
                           } else {
                               console.log('⏳ パスワードリセット: onAuthStateChangeイベントを待機中...');
                               // onAuthStateChangeで PASSWORD_RECOVERY イベントが発火するのを待つ
+                              // 5秒待ってもセッションが確立されない場合はエラー
+                              setTimeout(() => {
+                                  supabase.auth.getSession().then(({ data: { session } }) => {
+                                      if (!session?.user) {
+                                          console.error('❌ タイムアウト: セッションが確立されませんでした');
+                                          alert(
+                                              'パスワードリセットリンクが無効または期限切れです。\n\n' +
+                                              '新しいパスワードリセットメールをリクエストしてください。\n\n' +
+                                              'それでも解決しない場合は support@makers.tokyo にお問い合わせください'
+                                          );
+                                      }
+                                  });
+                              }, 5000);
                           }
                       } catch (e) {
                           console.error('❌ パスワードリセット: セッション確立エラー', e);
+                          alert(
+                              'パスワードリセット処理中にエラーが発生しました。\n\n' +
+                              'エラー: ' + e.message + '\n\n' +
+                              '新しいパスワードリセットメールをリクエストしてください。\n' +
+                              'それでも解決しない場合は support@makers.tokyo にお問い合わせください'
+                          );
                       }
                   }, 500); // 500ms待機
               } else {
