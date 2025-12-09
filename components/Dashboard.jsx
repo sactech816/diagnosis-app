@@ -60,40 +60,64 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
 
     useEffect(() => {
         const init = async () => {
-            if(!user) return;
+            console.log('🚀 Dashboard初期化開始 user:', user ? user.id : 'なし');
             
-            // 決済成功時の処理を最初に実行
+            // 決済成功時の処理を最初に実行（ユーザー情報の有無に関わらず）
             const params = new URLSearchParams(window.location.search);
-            const isPaymentSuccess = params.get('payment') === 'success' && params.get('session_id');
+            const paymentStatus = params.get('payment');
+            const sessionId = params.get('session_id');
+            const quizId = params.get('quiz_id');
+            
+            console.log('📋 URLパラメータ:', { paymentStatus, sessionId, quizId, hasUser: !!user });
+            
+            const isPaymentSuccess = paymentStatus === 'success' && sessionId;
             
             if (isPaymentSuccess) {
-                const quizId = params.get('quiz_id');
-                const sessionId = params.get('session_id');
-                // URLパラメータをクリア
-                window.history.replaceState(null, '', window.location.pathname);
+                if (!user) {
+                    console.log('⚠️ 決済成功を検出しましたが、ユーザー情報がありません。少し待ちます...');
+                    // ユーザー情報が設定されるまで少し待つ
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // 再度確認（useEffectが再実行されるため、ここでは処理しない）
+                    return;
+                }
+                console.log('✅ 決済成功を検出！検証を開始します...');
                 // 決済検証を実行（この中でリロードされる）
                 await verifyPayment(sessionId, quizId);
                 return; // verifyPayment内でリロードされるため、以降の処理は不要
             }
+            
+            if(!user) {
+                console.log('⚠️ ユーザー情報がありません（通常の初期化をスキップ）');
+                return;
+            }
 
             // 通常の初期化処理
+            console.log('📝 通常の初期化処理を開始');
             await fetchMyQuizzes();
             
             // 購入履歴を取得
             console.log('🔍 購入履歴を取得中... user.id:', user.id);
+            
+            // 現在のセッション情報を確認
+            const { data: sessionData } = await supabase.auth.getSession();
+            console.log('🔐 現在のセッション:', sessionData?.session ? 'あり' : 'なし');
+            
             const { data: bought, error } = await supabase
                 .from('purchases')
-                .select('quiz_id, id, created_at')
+                .select('quiz_id, id, created_at, stripe_session_id')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
             
             if (error) {
                 console.error('❌ 購入履歴の取得エラー:', error);
                 console.error('❌ エラー詳細:', JSON.stringify(error, null, 2));
+                console.error('❌ エラーコード:', error.code);
+                console.error('❌ エラーメッセージ:', error.message);
             } else {
                 console.log('📋 購入履歴を取得:', bought);
                 const purchasedIds = bought?.map(p => p.quiz_id) || [];
                 console.log('📋 購入済みクイズID:', purchasedIds);
+                console.log('📋 購入件数:', bought?.length || 0);
                 setPurchases(purchasedIds);
             }
 
@@ -103,6 +127,7 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
             }
 
             setLoading(false);
+            console.log('✅ Dashboard初期化完了');
         };
         init();
     }, [user, isAdmin]);
@@ -110,6 +135,11 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
     const verifyPayment = async (sessionId, quizId) => {
         try {
             console.log('🔍 決済検証開始:', { sessionId, quizId, userId: user.id });
+            
+            // URLパラメータをクリア（検証前に実行）
+            window.history.replaceState(null, '', window.location.pathname);
+            console.log('🧹 URLパラメータをクリアしました');
+            
             const res = await fetch('/api/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -120,31 +150,48 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
             console.log('✅ 決済検証レスポンス:', data);
             
             if (res.ok) {
+                console.log('✅ 決済検証成功！購入履歴を更新します...');
+                
                 // 少し待ってから購入履歴を再取得（DBの反映を待つ）
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 // 購入履歴を再取得して確実に反映
-                const { data: bought, error } = await supabase.from('purchases').select('quiz_id').eq('user_id', user.id);
+                console.log('🔍 購入履歴を再取得します... user.id:', user.id);
+                const { data: bought, error } = await supabase
+                    .from('purchases')
+                    .select('quiz_id, id, created_at, stripe_session_id')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+                    
                 if (error) {
                     console.error('❌ 購入履歴の取得エラー:', error);
+                    console.error('❌ エラー詳細:', JSON.stringify(error, null, 2));
                     alert('決済は完了しましたが、購入履歴の取得に失敗しました。ページを再読み込みしてください。');
-                    // エラーでもページをリロード
-                    setTimeout(() => window.location.reload(), 2000);
+                    // エラーでもダッシュボードに遷移
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2000);
                 } else {
                     console.log('📋 購入履歴を更新:', bought);
+                    console.log('📋 購入件数:', bought?.length || 0);
                     const purchasedIds = bought?.map(p => p.quiz_id) || [];
+                    console.log('📋 購入済みクイズID:', purchasedIds);
+                    
+                    // 今回購入したクイズIDが含まれているか確認
+                    const justPurchased = purchasedIds.includes(parseInt(quizId));
+                    console.log(`📋 今回購入したクイズ(${quizId})が含まれている:`, justPurchased);
+                    
                     setPurchases(purchasedIds);
                     
-                    // ステート更新後、少し待ってからアラート表示
-                    setTimeout(() => {
-                        alert('寄付ありがとうございます！Pro機能（HTML・埋め込み・リスト）が開放されました。');
-                        // アラート後にページをリロードして確実に反映
-                        window.location.reload();
-                    }, 100);
+                    // アラート表示してからダッシュボードに遷移
+                    alert('寄付ありがとうございます！Pro機能（HTML・埋め込み・リスト）が開放されました。');
+                    console.log('🔄 ダッシュボードに遷移します...');
+                    // ダッシュボードページに遷移（ページをリロード）
+                    window.location.href = '/dashboard';
                 }
             } else {
                 console.error('❌ 決済検証失敗:', data);
-                alert('決済の確認に失敗しました。お手数ですが、ページを再読み込みしてください。');
+                alert('決済の確認に失敗しました: ' + (data.error || '不明なエラー'));
             }
         } catch (e) {
             console.error('❌ 決済検証エラー:', e);
@@ -360,6 +407,21 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-2"><LayoutDashboard/> マイページ</h1>
                     <div className="flex items-center gap-4">
+                        <button 
+                            onClick={async () => {
+                                console.log('🔍 デバッグ: 購入履歴を確認');
+                                const { data, error } = await supabase
+                                    .from('purchases')
+                                    .select('*')
+                                    .eq('user_id', user.id);
+                                console.log('📋 購入履歴:', data);
+                                console.log('❌ エラー:', error);
+                                alert(`購入件数: ${data?.length || 0}\n詳細はコンソールを確認してください`);
+                            }}
+                            className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-200 flex items-center gap-2 transition-colors text-sm"
+                        >
+                            🔍 購入履歴確認
+                        </button>
                         <button 
                             onClick={() => setPage('editor')} 
                             className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 transition-colors"

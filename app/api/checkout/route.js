@@ -48,8 +48,8 @@ export async function POST(req) {
         },
       ],
       mode: 'payment',
-      success_url: `${origin}/?payment=success&session_id={CHECKOUT_SESSION_ID}&quiz_id=${quizId}`,
-      cancel_url: `${origin}/?payment=cancel`,
+      success_url: `${origin}/?payment=success&session_id={CHECKOUT_SESSION_ID}&quiz_id=${quizId}&redirect=dashboard`,
+      cancel_url: `${origin}/?payment=cancel&redirect=dashboard`,
       metadata: {
         userId: userId,
         quizId: quizId,

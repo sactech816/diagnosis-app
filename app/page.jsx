@@ -381,8 +381,12 @@ const App = () => {
               console.log('初期化: クイズは既に読み込まれています');
               // ビューは既に設定されているので、そのまま続行
           }
-          // 決済完了・キャンセル戻りならダッシュボードへ強制移動
+          // 決済完了・キャンセル戻りの場合
           else if (paymentStatus === 'success' || paymentStatus === 'cancel') {
+              console.log('🔍 決済完了を検出:', paymentStatus);
+              // 決済成功・キャンセル両方ともダッシュボードに遷移
+              // Dashboard.jsxのuseEffectで決済検証を実行
+              console.log('📍 ダッシュボードに遷移します');
               setView('dashboard');
           }
           // クイズIDがあるが、まだ読み込まれていない場合（上記の処理で読み込めなかった場合）
