@@ -775,7 +775,17 @@ const App = () => {
           `}
         </Script>
         
-        <AuthModal isOpen={showAuth} onClose={()=>setShowAuth(false)} setUser={setUser} isPasswordReset={showPasswordReset} onNavigate={(view) => navigateTo(view)} />
+        <AuthModal 
+            isOpen={showAuth} 
+            onClose={()=>{
+                setShowAuth(false);
+                setShowPasswordReset(false); // パスワードリセットモードもリセット
+            }} 
+            setUser={setUser} 
+            isPasswordReset={showPasswordReset} 
+            setShowPasswordReset={setShowPasswordReset}
+            onNavigate={(view) => navigateTo(view)} 
+        />
         
         {view === 'portal' && (
             <Portal 

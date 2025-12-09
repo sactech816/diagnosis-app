@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNavigate }) => {
+const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowPasswordReset, onNavigate }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [isResetMode, setIsResetMode] = useState(false);
     const [isChangePasswordMode, setIsChangePasswordMode] = useState(isPasswordReset);
@@ -229,7 +229,23 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
             
             if (error) {
                 console.error('パスワード更新エラー:', error);
-                throw error;
+                
+                // エラーメッセージをユーザーフレンドリーに変換
+                let errorMessage = 'パスワード変更エラー';
+                
+                if (error.message.includes('New password should be different')) {
+                    errorMessage = '新しいパスワードは、現在のパスワードと異なるものを設定してください。';
+                } else if (error.message.includes('Password should be')) {
+                    errorMessage = 'パスワードは6文字以上で入力してください。';
+                } else if (error.message.includes('same as the old password')) {
+                    errorMessage = '新しいパスワードは、以前のパスワードと異なるものを設定してください。';
+                } else {
+                    errorMessage = error.message;
+                }
+                
+                alert(errorMessage);
+                setLoading(false);
+                return;
             }
             
             console.log('パスワード更新成功:', data);
@@ -240,8 +256,16 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
             setNewPassword('');
             setConfirmPassword('');
             
+            // showPasswordResetをfalseに設定（重要）
+            // これがないと、ログイン後もパスワード変更画面が残る
+            if (setShowPasswordReset) {
+                setShowPasswordReset(false);
+            }
+            
             // モーダルを閉じる
-            if (onClose) onClose();
+            if (onClose) {
+                onClose();
+            }
             
             // マイページにリダイレクト
             if (onNavigate) {
@@ -251,7 +275,21 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, onNaviga
             }
         } catch (e) {
             console.error('パスワード変更エラー:', e);
-            alert('パスワード変更エラー: ' + e.message + '\n\nもう一度お試しください。');
+            
+            // エラーメッセージをユーザーフレンドリーに変換
+            let errorMessage = 'パスワード変更エラー';
+            
+            if (e.message.includes('New password should be different')) {
+                errorMessage = '新しいパスワードは、現在のパスワードと異なるものを設定してください。';
+            } else if (e.message.includes('Password should be')) {
+                errorMessage = 'パスワードは6文字以上で入力してください。';
+            } else if (e.message.includes('same as the old password')) {
+                errorMessage = '新しいパスワードは、以前のパスワードと異なるものを設定してください。';
+            } else {
+                errorMessage = e.message;
+            }
+            
+            alert(errorMessage + '\n\nもう一度お試しください。');
         } finally {
             setLoading(false);
         }
