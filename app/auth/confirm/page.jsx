@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 /**
- * パスワードリセット確認ページ
- * 
- * Supabaseからのパスワードリセットリンク（PKCE形式）を処理します。
- * URL形式: /auth/confirm?token_hash=...&type=recovery&redirect_to=...
+ * パスワードリセット確認ページの内部コンポーネント
+ * useSearchParams()を使用するため、Suspenseでラップする必要がある
  */
-export default function AuthConfirmPage() {
+function AuthConfirmContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -54,6 +52,25 @@ export default function AuthConfirmPage() {
             <p className="font-bold">パスワードリセット処理中...</p>
             <p className="text-sm text-gray-600 mt-2">少々お待ちください</p>
         </div>
+    );
+}
+
+/**
+ * パスワードリセット確認ページ
+ * 
+ * Supabaseからのパスワードリセットリンク（PKCE形式）を処理します。
+ * URL形式: /auth/confirm?token_hash=...&type=recovery&redirect_to=...
+ */
+export default function AuthConfirmPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-indigo-600">
+                <Loader2 className="animate-spin mb-4" size={48} />
+                <p className="font-bold">読み込み中...</p>
+            </div>
+        }>
+            <AuthConfirmContent />
+        </Suspense>
     );
 }
 
