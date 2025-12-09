@@ -67,6 +67,10 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowP
                         // パスワードが合っていた場合、自動的にログイン
                         alert('このメールアドレスは既に登録されています。\n\n自動的にログインしました。');
                         setUser(loginData.user);
+                        // パスワードリセットモードをリセット
+                        if (setShowPasswordReset) {
+                            setShowPasswordReset(false);
+                        }
                         onClose();
                         // ログイン成功時にマイページにリダイレクト
                         if (onNavigate) {
@@ -110,6 +114,10 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowP
                         // ユーザーが既に存在し、パスワードが合っている
                         alert('このメールアドレスは既に登録されています。\n\n自動的にログインしました。');
                         setUser(loginData.user);
+                        // パスワードリセットモードをリセット
+                        if (setShowPasswordReset) {
+                            setShowPasswordReset(false);
+                        }
                         onClose();
                         if (onNavigate) {
                             onNavigate('dashboard');
@@ -129,6 +137,10 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowP
 
             if (isLogin && data.user) { 
                 setUser(data.user); 
+                // パスワードリセットモードをリセット
+                if (setShowPasswordReset) {
+                    setShowPasswordReset(false);
+                }
                 onClose();
                 // ログイン成功時にマイページにリダイレクト
                 if (onNavigate) {
@@ -140,6 +152,10 @@ const AuthModal = ({ isOpen, onClose, setUser, isPasswordReset = false, setShowP
                 if (!data.session) alert('確認メールを送信しました。メール内のリンクをクリックして認証を完了させてください。');
                 else { 
                     setUser(data.user); 
+                    // パスワードリセットモードをリセット
+                    if (setShowPasswordReset) {
+                        setShowPasswordReset(false);
+                    }
                     onClose();
                     // 新規登録後もログイン成功時と同様にマイページにリダイレクト
                     if (onNavigate) {
