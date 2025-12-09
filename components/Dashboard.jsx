@@ -64,16 +64,38 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
             
             // 決済成功時の処理を最初に実行
             const params = new URLSearchParams(window.location.search);
-            if (params.get('payment') === 'success' && params.get('session_id')) {
+            const isPaymentSuccess = params.get('payment') === 'success' && params.get('session_id');
+            
+            if (isPaymentSuccess) {
                 const quizId = params.get('quiz_id');
-                await verifyPayment(params.get('session_id'), quizId);
+                const sessionId = params.get('session_id');
+                // URLパラメータをクリア
                 window.history.replaceState(null, '', window.location.pathname);
+                // 決済検証を実行（この中でリロードされる）
+                await verifyPayment(sessionId, quizId);
+                return; // verifyPayment内でリロードされるため、以降の処理は不要
             }
 
-            // クイズと購入履歴を取得
+            // 通常の初期化処理
             await fetchMyQuizzes();
-            const { data: bought } = await supabase.from('purchases').select('quiz_id').eq('user_id', user.id);
-            setPurchases(bought?.map(p => p.quiz_id) || []);
+            
+            // 購入履歴を取得
+            console.log('🔍 購入履歴を取得中... user.id:', user.id);
+            const { data: bought, error } = await supabase
+                .from('purchases')
+                .select('quiz_id, id, created_at')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('❌ 購入履歴の取得エラー:', error);
+                console.error('❌ エラー詳細:', JSON.stringify(error, null, 2));
+            } else {
+                console.log('📋 購入履歴を取得:', bought);
+                const purchasedIds = bought?.map(p => p.quiz_id) || [];
+                console.log('📋 購入済みクイズID:', purchasedIds);
+                setPurchases(purchasedIds);
+            }
 
             // 管理者の場合、お知らせを取得
             if (isAdmin) {
@@ -98,22 +120,35 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
             console.log('✅ 決済検証レスポンス:', data);
             
             if (res.ok) {
+                // 少し待ってから購入履歴を再取得（DBの反映を待つ）
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 // 購入履歴を再取得して確実に反映
                 const { data: bought, error } = await supabase.from('purchases').select('quiz_id').eq('user_id', user.id);
                 if (error) {
                     console.error('❌ 購入履歴の取得エラー:', error);
+                    alert('決済は完了しましたが、購入履歴の取得に失敗しました。ページを再読み込みしてください。');
+                    // エラーでもページをリロード
+                    setTimeout(() => window.location.reload(), 2000);
                 } else {
                     console.log('📋 購入履歴を更新:', bought);
-                    setPurchases(bought?.map(p => p.quiz_id) || []);
+                    const purchasedIds = bought?.map(p => p.quiz_id) || [];
+                    setPurchases(purchasedIds);
+                    
+                    // ステート更新後、少し待ってからアラート表示
+                    setTimeout(() => {
+                        alert('寄付ありがとうございます！Pro機能（HTML・埋め込み・リスト）が開放されました。');
+                        // アラート後にページをリロードして確実に反映
+                        window.location.reload();
+                    }, 100);
                 }
-                alert('寄付ありがとうございます！Pro機能（HTML・埋め込み・リスト）が開放されました。');
             } else {
                 console.error('❌ 決済検証失敗:', data);
                 alert('決済の確認に失敗しました。お手数ですが、ページを再読み込みしてください。');
             }
         } catch (e) {
             console.error('❌ 決済検証エラー:', e);
-            alert('エラーが発生しました: ' + e.message);
+            alert('エラーが発生しました: ' + e.message + '\nページを再読み込みしてください。');
         }
     };
 
@@ -645,6 +680,12 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                 {myQuizzes.map(quiz => {
                                     // ★修正: 購入済み または 管理者 ならアンロック
                                     const isUnlocked = purchases.includes(quiz.id) || isAdmin;
+                                    console.log(`🔓 Quiz ${quiz.id} (${quiz.title}):`, {
+                                        isUnlocked,
+                                        isPurchased: purchases.includes(quiz.id),
+                                        isAdmin,
+                                        allPurchases: purchases
+                                    });
                                     
                                     return (
                                     <div key={quiz.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow relative group">

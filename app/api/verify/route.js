@@ -37,22 +37,39 @@ export async function POST(req) {
     }
 
     // 3. Supabaseに購入履歴を記録（管理者権限で実行）
-    const { data, error } = await supabaseAdmin.from('purchases').insert([
-      {
+    const purchaseData = {
         user_id: userId,
         quiz_id: parseInt(quizId),
         stripe_session_id: sessionId,
         amount: session.amount_total
-      }
-    ]).select();
+    };
+    
+    console.log('📝 購入履歴を挿入:', purchaseData);
+    
+    const { data, error } = await supabaseAdmin.from('purchases').insert([purchaseData]).select();
 
     if (error) {
         console.error("❌ Supabase挿入エラー:", error);
+        console.error("❌ エラー詳細:", JSON.stringify(error, null, 2));
         throw error;
     }
 
-    console.log('✅ 購入履歴を記録:', data);
-    return NextResponse.json({ success: true, data });
+    console.log('✅ 購入履歴を記録完了:', data);
+    
+    // 挿入後、実際に記録されているか確認
+    const { data: verification, error: verifyError } = await supabaseAdmin
+      .from('purchases')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('quiz_id', parseInt(quizId));
+    
+    if (verifyError) {
+        console.error('❌ 購入履歴の確認エラー:', verifyError);
+    } else {
+        console.log('🔍 購入履歴の確認:', verification);
+    }
+    
+    return NextResponse.json({ success: true, data, verification });
   } catch (err) {
     console.error("❌ Verify API エラー:", err);
     return NextResponse.json({ error: err.message, details: err }, { status: 500 });
