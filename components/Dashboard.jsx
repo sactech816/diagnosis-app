@@ -118,11 +118,11 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
     };
 
     const handlePurchase = async (quiz) => {
-        const inputPrice = window.prompt(`「${quiz.title}」のPro機能を開放します。\n\n応援・寄付金額を入力してください（1,000円〜100,000円）。`, "1000");
+        const inputPrice = window.prompt(`「${quiz.title}」のPro機能を開放します。\n\n応援・寄付金額を入力してください（10円〜100,000円）。`, "1000");
         if (inputPrice === null) return;
         const price = parseInt(inputPrice, 10);
         if (isNaN(price) || price < 10 || price > 100000) {
-            alert("金額は 1,000円以上、100,000円以下 の半角数字で入力してください。");
+            alert("金額は 10円以上、100,000円以下 の半角数字で入力してください。");
             return;
         }
 
