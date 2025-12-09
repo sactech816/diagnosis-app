@@ -409,21 +409,6 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                     <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-2"><LayoutDashboard/> マイページ</h1>
                     <div className="flex items-center gap-4">
                         <button 
-                            onClick={async () => {
-                                console.log('🔍 デバッグ: 購入履歴を確認');
-                                const { data, error } = await supabase
-                                    .from('purchases')
-                                    .select('*')
-                                    .eq('user_id', user.id);
-                                console.log('📋 購入履歴:', data);
-                                console.log('❌ エラー:', error);
-                                alert(`購入件数: ${data?.length || 0}\n詳細はコンソールを確認してください`);
-                            }}
-                            className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-200 flex items-center gap-2 transition-colors text-sm"
-                        >
-                            🔍 購入履歴確認
-                        </button>
-                        <button 
                             onClick={() => setPage('editor')} 
                             className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 transition-colors"
                         >
