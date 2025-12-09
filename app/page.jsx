@@ -173,6 +173,12 @@ const App = () => {
                         console.log('⏸️ パスワードリセット中のため、リダイレクトをスキップ');
                         return;
                     }
+                    // ★修正: 決済成功時はリダイレクトしない
+                    const paymentStatus = currentSearch.get('payment');
+                    if (paymentStatus === 'success' || paymentStatus === 'cancel') {
+                        console.log('⏸️ 決済処理中のため、リダイレクトをスキップ');
+                        return;
+                    }
                     // クイズIDがある場合はリダイレクトしない
                     const quizId = currentSearch.get('id');
                     if (quizId) {
@@ -384,9 +390,10 @@ const App = () => {
           // 決済完了・キャンセル戻りの場合
           else if (paymentStatus === 'success' || paymentStatus === 'cancel') {
               console.log('🔍 決済完了を検出:', paymentStatus);
-              // 決済成功・キャンセル両方ともダッシュボードに遷移
+              // ★修正: URLパラメータを保持したままダッシュボードに遷移
               // Dashboard.jsxのuseEffectで決済検証を実行
               console.log('📍 ダッシュボードに遷移します');
+              // URLを変更せず、ビューだけを変更（URLパラメータを保持）
               setView('dashboard');
           }
           // クイズIDがあるが、まだ読み込まれていない場合（上記の処理で読み込めなかった場合）

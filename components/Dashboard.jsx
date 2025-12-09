@@ -136,10 +136,7 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
         try {
             console.log('🔍 決済検証開始:', { sessionId, quizId, userId: user.id });
             
-            // URLパラメータをクリア（検証前に実行）
-            window.history.replaceState(null, '', window.location.pathname);
-            console.log('🧹 URLパラメータをクリアしました');
-            
+            // ★修正: 決済検証APIを先に実行（URLパラメータをクリアする前に）
             const res = await fetch('/api/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -151,6 +148,10 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
             
             if (res.ok) {
                 console.log('✅ 決済検証成功！購入履歴を更新します...');
+                
+                // ★修正: 決済検証成功後にURLパラメータをクリア
+                window.history.replaceState(null, '', window.location.pathname);
+                console.log('🧹 URLパラメータをクリアしました');
                 
                 // 少し待ってから購入履歴を再取得（DBの反映を待つ）
                 await new Promise(resolve => setTimeout(resolve, 1000));
