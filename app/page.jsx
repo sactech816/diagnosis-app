@@ -54,11 +54,13 @@ const App = () => {
           const hash = window.location.hash;
           const searchParams = new URLSearchParams(window.location.search);
           const token = searchParams.get('token');
+          const tokenHash = searchParams.get('token_hash'); // PKCE形式のトークンハッシュ
           const type = searchParams.get('type');
           const redirectTo = searchParams.get('redirect_to');
           const isRecovery = (hash && hash.includes('type=recovery')) || 
                             type === 'recovery' ||
-                            token !== null;
+                            token !== null ||
+                            tokenHash !== null;
           
           console.log('🔍 初期化: URL詳細チェック', { 
               fullUrl: window.location.href,
@@ -66,6 +68,7 @@ const App = () => {
               search: window.location.search,
               hash: window.location.hash,
               token: token ? '***' : null, // トークンは隠す
+              tokenHash: tokenHash ? '***' : null, // トークンハッシュは隠す
               type: type,
               redirectTo: redirectTo,
               isRecovery: isRecovery
@@ -81,6 +84,12 @@ const App = () => {
               console.log('✅ ハッシュフラグメントを設定しました:', newHash);
               // ページをリロードして、Supabaseが新しいハッシュを処理できるようにする
               return;
+          }
+          
+          // PKCE形式のtoken_hashがある場合の処理
+          if (tokenHash && type === 'recovery') {
+              console.log('🔑 PKCE形式のトークンハッシュを検出しました');
+              // このまま処理を続行（後続のverifyOtp処理で使用）
           }
           
           // パスワードリセットの場合は最優先で処理
@@ -130,7 +139,8 @@ const App = () => {
               const searchParams = new URLSearchParams(window.location.search);
               const isRecovery = (hash && hash.includes('type=recovery')) || 
                                 searchParams.get('type') === 'recovery' ||
-                                searchParams.get('token');
+                                searchParams.get('token') ||
+                                searchParams.get('token_hash'); // PKCE形式にも対応
               
               console.log('🔍 初期化: URLチェック', { hash, search: window.location.search, isRecovery });
               
@@ -186,7 +196,59 @@ const App = () => {
                   // まずポータルページを表示
                   setView('portal');
                   
-                  // クエリパラメータにトークンがある場合は、verifyOtpで検証
+                  // PKCE形式のtoken_hashがある場合の処理
+                  if (tokenHash && type === 'recovery') {
+                      console.log('🔑 PKCE形式のトークンハッシュを検証します');
+                      try {
+                          const { data, error } = await supabase.auth.verifyOtp({
+                              token_hash: tokenHash,
+                              type: 'recovery',
+                          });
+                          
+                          console.log('📊 verifyOtp結果 (PKCE):', { 
+                              hasSession: !!data?.session, 
+                              hasUser: !!data?.user,
+                              error: error 
+                          });
+                          
+                          if (error) {
+                              console.error('❌ トークン検証エラー (PKCE):', error);
+                              alert(
+                                  'パスワードリセットリンクが無効または期限切れです。\n\n' +
+                                  'エラー: ' + error.message + '\n\n' +
+                                  '新しいパスワードリセットメールをリクエストしてください。\n' +
+                                  'それでも解決しない場合は support@makers.tokyo にお問い合わせください'
+                              );
+                              // クエリパラメータをクリア
+                              window.history.replaceState(null, '', window.location.pathname);
+                              setView('portal');
+                              return;
+                          }
+                          
+                          if (data?.session?.user) {
+                              console.log('✅ トークン検証成功 (PKCE)、パスワード変更画面を表示');
+                              setUser(data.session.user);
+                              setShowPasswordReset(true);
+                              setShowAuth(true);
+                              // クエリパラメータをクリア
+                              window.history.replaceState(null, '', window.location.pathname);
+                              return;
+                          }
+                      } catch (e) {
+                          console.error('❌ verifyOtpエラー (PKCE):', e);
+                          alert(
+                              'パスワードリセット処理中にエラーが発生しました。\n\n' +
+                              'エラー: ' + e.message + '\n\n' +
+                              '新しいパスワードリセットメールをリクエストしてください。\n' +
+                              'それでも解決しない場合は support@makers.tokyo にお問い合わせください'
+                          );
+                          window.history.replaceState(null, '', window.location.pathname);
+                          setView('portal');
+                          return;
+                      }
+                  }
+                  
+                  // クエリパラメータにトークンがある場合は、verifyOtpで検証（古い形式）
                   if (token && type === 'recovery') {
                       console.log('🔑 クエリパラメータのトークンを検証します');
                       try {
