@@ -342,24 +342,32 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
    - `http://localhost:3000/**` （開発環境用）
 3. **Save** をクリック
 
-### 3. アプリをデプロイ
+### 3. `/auth/confirm` ルートを作成（✨ 重要）
+
+PKCE形式のリンクは `/auth/confirm` というパスを使用します。このルートを作成する必要があります。
+
+**ファイル**: `app/auth/confirm/page.jsx`
+
+このファイルは既に作成されています。このページは、Supabaseからのパスワードリセットリンクを受け取り、ルートページにリダイレクトします。
+
+### 4. アプリをデプロイ
 
 コードを変更したので、アプリを再デプロイする必要があります：
 
 ```bash
 git add .
-git commit -m "feat: パスワードリセットのPKCE形式に対応、token_hash処理を追加"
+git commit -m "feat: パスワードリセットのPKCE形式に対応、/auth/confirmルート追加"
 git push
 ```
 
-### 4. 新しいパスワードリセットメールを送信してテスト
+### 5. 新しいパスワードリセットメールを送信してテスト
 
 - **新しいメールアドレス**でテスト（以前のリンクはキャッシュされている可能性があるため）
 - メールのリンクをテキストエディタにコピーして、形式を確認
 - **正しい形式**: `https://shindan-quiz.makers.tokyo/auth/confirm?token_hash=...&type=recovery`
 - **間違った形式**: `https://shindan-quiz.makers.tokyo#access_token=47182913&type=recovery` （トークンが短すぎる）
 
-### 5. コンソールログを確認してデバッグ
+### 6. コンソールログを確認してデバッグ
 
 ブラウザでリンクを開いたら、F12キーでコンソールを開き、以下のログを確認：
 
