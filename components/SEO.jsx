@@ -5,8 +5,9 @@ const SEO = ({ title, description, image }) => {
     const schemaData = {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "診断クイズメーカー",
-        "description": description || "AIが自動で診断・検定・占いを作成。集客や教育に使えるクイズ作成ツール。",
+        "name": "診断クイズ作成メーカー",
+        "alternateName": ["診断メーカー", "クイズ作成ツール", "診断作成ツール"],
+        "description": description || "診断クイズ作成メーカーは、AIが自動で診断・検定・占いを作成できる無料ツール。性格診断、心理テスト、適職診断などを簡単に作成・公開できます。",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "All",
         "offers": {
@@ -14,7 +15,8 @@ const SEO = ({ title, description, image }) => {
             "price": "0",
             "priceCurrency": "JPY"
         },
-        "featureList": ["AI生成", "診断作成", "テスト作成", "占い作成", "LINE連携"]
+        "featureList": ["AI自動生成", "診断クイズ作成", "性格診断作成", "心理テスト作成", "適職診断作成", "占い作成", "無料利用", "簡単公開"],
+        "keywords": "診断クイズ作成メーカー, 診断メーカー, クイズ作成, 性格診断, 心理テスト, 適職診断, AI診断"
     };
 
     return (
