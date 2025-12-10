@@ -4,7 +4,7 @@ import Header from './Header';
 import Footer from './Footer';
 import { supabase } from '../lib/supabase';
 
-const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAuth }) => {
+const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAuth, serviceType = 'quiz' }) => {
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
@@ -15,7 +15,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
         link_url: '',
         link_text: '',
         is_active: true,
-        announcement_date: ''
+        announcement_date: '',
+        service_type: 'all'
     });
 
     useEffect(() => {
@@ -27,10 +28,18 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
     const fetchAnnouncements = async () => {
         if (!supabase) return;
         try {
-            // 管理者の場合はすべてのお知らせを取得（非表示も含む）、一般ユーザーは表示中のみ
-            const query = isAdmin
-                ? supabase.from('announcements').select('*').order('created_at', { ascending: false })
-                : supabase.from('announcements').select('*').eq('is_active', true).order('created_at', { ascending: false });
+            // サービスタイプでフィルタリング（'all'と指定されたserviceTypeのお知らせを取得）
+            let query = supabase.from('announcements').select('*');
+            
+            // 管理者以外は表示中のみ
+            if (!isAdmin) {
+                query = query.eq('is_active', true);
+            }
+            
+            // サービスタイプでフィルタリング（'all'または指定されたserviceType）
+            query = query.or(`service_type.eq.all,service_type.eq.${serviceType}`);
+            
+            query = query.order('created_at', { ascending: false });
             
             const { data, error } = await query;
             if (error) throw error;
@@ -54,7 +63,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                 link_url: announcementForm.link_url || null,
                 link_text: announcementForm.link_text || null,
                 is_active: announcementForm.is_active,
-                announcement_date: announcementForm.announcement_date || null
+                announcement_date: announcementForm.announcement_date || null,
+                service_type: announcementForm.service_type || 'all'
             };
 
             if (editingAnnouncement) {
@@ -80,7 +90,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                 link_url: '',
                 link_text: '',
                 is_active: true,
-                announcement_date: ''
+                announcement_date: '',
+                service_type: 'all'
             });
             await fetchAnnouncements();
         } catch (e) {
@@ -100,7 +111,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
             link_url: announcement.link_url || '',
             link_text: announcement.link_text || '',
             is_active: announcement.is_active,
-            announcement_date: displayDate
+            announcement_date: displayDate,
+            service_type: announcement.service_type || 'all'
         });
         setShowAnnouncementForm(true);
     };
@@ -150,7 +162,8 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                                         link_url: '',
                                         link_text: '',
                                         is_active: true,
-                                        announcement_date: ''
+                                        announcement_date: '',
+                                        service_type: 'all'
                                     });
                                     setShowAnnouncementForm(true);
                                 }}
@@ -172,21 +185,22 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                                 </h3>
                                 <button 
                                     onClick={() => {
-                                        setShowAnnouncementForm(false);
-                                        setEditingAnnouncement(null);
-                                        setAnnouncementForm({
-                                            title: '',
-                                            content: '',
-                                            link_url: '',
-                                            link_text: '',
-                                            is_active: true
-                                        });
-                                    }}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <X size={20}/>
-                                </button>
-                            </div>
+                                    setShowAnnouncementForm(false);
+                                    setEditingAnnouncement(null);
+                                    setAnnouncementForm({
+                                        title: '',
+                                        content: '',
+                                        link_url: '',
+                                        link_text: '',
+                                        is_active: true,
+                                        service_type: 'all'
+                                    });
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={20}/>
+                            </button>
+                        </div>
                             <form onSubmit={handleAnnouncementSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-1">タイトル *</label>
@@ -253,6 +267,19 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                                         <label htmlFor="is_active" className="text-sm font-bold text-gray-700">表示する</label>
                                     </div>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">サービス区分</label>
+                                    <select
+                                        value={announcementForm.service_type}
+                                        onChange={e => setAnnouncementForm({...announcementForm, service_type: e.target.value})}
+                                        className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900"
+                                    >
+                                        <option value="all">全サービス共通</option>
+                                        <option value="quiz">診断クイズメーカー専用</option>
+                                        <option value="profile">プロフィールLPメーカー専用</option>
+                                    </select>
+                                    <p className="text-xs text-gray-500 mt-1">どのサービスでお知らせを表示するか選択してください</p>
+                                </div>
                                 <div className="flex gap-2">
                                     <button
                                         type="submit"
@@ -263,24 +290,25 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setShowAnnouncementForm(false);
-                                            setEditingAnnouncement(null);
-                                            setAnnouncementForm({
-                                                title: '',
-                                                content: '',
-                                                link_url: '',
-                                                link_text: '',
-                                                is_active: true
-                                            });
-                                        }}
-                                        className="px-6 bg-gray-100 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"
-                                    >
-                                        キャンセル
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
+                                        setShowAnnouncementForm(false);
+                                        setEditingAnnouncement(null);
+                                        setAnnouncementForm({
+                                            title: '',
+                                            content: '',
+                                            link_url: '',
+                                            link_text: '',
+                                            is_active: true,
+                                            service_type: 'all'
+                                        });
+                                    }}
+                                    className="px-6 bg-gray-100 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                    キャンセル
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
 
                     {loading ? (
                         <div className="text-center py-20">
@@ -324,6 +352,17 @@ const AnnouncementsPage = ({ onBack, isAdmin, setPage, user, onLogout, setShowAu
                                             {isAdmin && !announcement.is_active && (
                                                 <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold">
                                                     非表示
+                                                </span>
+                                            )}
+                                            {isAdmin && announcement.service_type && (
+                                                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                                    announcement.service_type === 'all' ? 'bg-blue-100 text-blue-700' :
+                                                    announcement.service_type === 'quiz' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-green-100 text-green-700'
+                                                }`}>
+                                                    {announcement.service_type === 'all' ? '全サービス' :
+                                                     announcement.service_type === 'quiz' ? '診断クイズ' :
+                                                     'プロフィールLP'}
                                                 </span>
                                             )}
                                             <span className="text-xs text-gray-500 flex items-center gap-1 whitespace-nowrap ml-4">

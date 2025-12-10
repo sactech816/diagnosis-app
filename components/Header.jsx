@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, User, LayoutDashboard, TrendingUp, Menu, X, LogOut, HelpCircle, FileText, Lightbulb, Mail, Shield, Scale, PlusCircle } from 'lucide-react';
+import { Sparkles, User, LayoutDashboard, TrendingUp, Menu, X, LogOut, HelpCircle, FileText, Lightbulb, Mail, Shield, Scale, PlusCircle, Bell } from 'lucide-react';
 
 const Header = ({ setPage, user, onLogout, setShowAuth }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,7 +26,7 @@ const Header = ({ setPage, user, onLogout, setShowAuth }) => {
                     <button onClick={handleCreate} className="hover:text-pink-500 flex items-center gap-1"><PlusCircle size={16}/> 診断を作成</button>
                     <button onClick={()=>handleNav('logic')} className="hover:text-orange-500 flex items-center gap-1"><Lightbulb size={16}/> 作り方のコツ</button>
                     <button onClick={()=>handleNav('effective')} className="hover:text-indigo-600 flex items-center gap-1"><TrendingUp size={16}/> 活用法</button>
-                    <button onClick={()=>handleNav('announcements')} className="hover:text-indigo-600 flex items-center gap-1"><FileText size={16}/> お知らせ</button>
+                    <button onClick={()=>handleNav('announcements')} className="hover:text-indigo-600 flex items-center gap-1"><Bell size={16}/> お知らせ</button>
                     <button onClick={()=>handleNav('contact')} className="hover:text-indigo-600 flex items-center gap-1"><Mail size={16}/> お問い合わせ</button>
                     {user ? (
                         <button onClick={()=>handleNav('dashboard')} className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full flex items-center gap-2 hover:bg-indigo-100 transition-colors">
@@ -50,7 +50,7 @@ const Header = ({ setPage, user, onLogout, setShowAuth }) => {
                     <button onClick={handleCreate} className="flex items-center gap-3 py-3 border-b border-gray-100 text-pink-600 font-bold"><PlusCircle size={20}/> 診断クイズを作成</button>
                     <button onClick={()=>handleNav('logic')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-orange-600 font-bold"><Lightbulb size={20}/> 売れる診断の作り方</button>
                     <button onClick={()=>handleNav('effective')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-indigo-600 font-bold"><TrendingUp size={20}/> 効果的な活用法</button>
-                    <button onClick={()=>handleNav('announcements')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-gray-700 font-bold"><FileText size={20}/> お知らせ</button>
+                    <button onClick={()=>handleNav('announcements')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-indigo-600 font-bold"><Bell size={20}/> お知らせ</button>
                     <button onClick={()=>handleNav('contact')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-gray-700 font-bold"><Mail size={20}/> お問い合わせ</button>
                     
                     <p className="text-xs font-bold text-gray-400 mt-6 mb-2">サポート・規約</p>
