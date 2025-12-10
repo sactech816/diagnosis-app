@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shindan-quiz.makers.tokyo';
-const siteName = '診断クイズ作成メーカー | AIで簡単作成';
-const siteDescription = '診断クイズ作成メーカーは、AIが自動で診断・検定・占いを作成できる無料ツール。性格診断、心理テスト、適職診断などを簡単に作成・公開。集客やマーケティング、教育に最適なクイズメーカーです。';
+const siteName = '診断クイズメーカー | AIで簡単作成';
+const siteDescription = '診断クイズメーカーは、AIが自動で診断・検定・占いを作成できる無料ツール。性格診断、心理テスト、適職診断などを簡単に作成・公開。集客やマーケティング、教育に最適です。';
 
 export const metadata: Metadata = {
   title: {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: `%s | ${siteName}`,
   },
   description: siteDescription,
-  keywords: ['診断クイズ作成メーカー', '診断メーカー', 'クイズ作成', '診断作成', '性格診断', '心理テスト', '適職診断', '占い作成', 'AIクイズ', '無料診断ツール', '集客ツール', 'マーケティングツール', '診断コンテンツ', 'クイズメーカー'],
+  keywords: ['診断クイズメーカー', '診断メーカー', 'クイズ作成', '診断作成', '性格診断', '心理テスト', '適職診断', '占い作成', 'AIクイズ', '無料診断ツール', '集客ツール', 'マーケティングツール', '診断コンテンツ', 'クイズメーカー'],
   authors: [{ name: siteName }],
   creator: siteName,
   publisher: siteName,

@@ -1,4 +1,4 @@
-# robots.txt for 診断クイズ作成メーカー
+# robots.txt for 診断クイズメーカー
 User-agent: *
 Allow: /
 Disallow: /api/
