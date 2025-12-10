@@ -29,7 +29,8 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
         link_url: '',
         link_text: '',
         is_active: true,
-        announcement_date: ''
+        announcement_date: '',
+        service_type: 'all'
     });
 
     const fetchMyQuizzes = async () => {
@@ -326,7 +327,8 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                 link_url: announcementForm.link_url || null,
                 link_text: announcementForm.link_text || null,
                 is_active: announcementForm.is_active,
-                announcement_date: announcementForm.announcement_date || null
+                announcement_date: announcementForm.announcement_date || null,
+                service_type: announcementForm.service_type || 'all'
             };
 
             if (editingAnnouncement) {
@@ -352,7 +354,8 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                 link_url: '',
                 link_text: '',
                 is_active: true,
-                announcement_date: ''
+                announcement_date: '',
+                service_type: 'all'
             });
             await fetchAnnouncements();
         } catch (e) {
@@ -372,7 +375,8 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
             link_url: announcement.link_url || '',
             link_text: announcement.link_text || '',
             is_active: announcement.is_active,
-            announcement_date: displayDate
+            announcement_date: displayDate,
+            service_type: announcement.service_type || 'all'
         });
         setShowAnnouncementForm(true);
     };
@@ -522,7 +526,8 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                         link_url: '',
                                         link_text: '',
                                         is_active: true,
-                                        announcement_date: ''
+                                        announcement_date: '',
+                                        service_type: 'all'
                                     });
                                     setShowAnnouncementForm(true);
                                 }}
@@ -548,7 +553,8 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                                 link_url: '',
                                                 link_text: '',
                                                 is_active: true,
-                                                announcement_date: ''
+                                                announcement_date: '',
+                                                service_type: 'all'
                                             });
                                         }}
                                         className="text-gray-400 hover:text-gray-600"
@@ -622,6 +628,19 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                             <label htmlFor="is_active" className="text-sm font-bold text-gray-700">表示する</label>
                                         </div>
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">サービス区分</label>
+                                        <select
+                                            value={announcementForm.service_type}
+                                            onChange={e => setAnnouncementForm({...announcementForm, service_type: e.target.value})}
+                                            className="w-full border border-gray-300 p-3 rounded-lg bg-gray-50 text-gray-900"
+                                        >
+                                            <option value="all">全サービス共通</option>
+                                            <option value="quiz">診断クイズメーカー専用</option>
+                                            <option value="profile">プロフィールLPメーカー専用</option>
+                                        </select>
+                                        <p className="text-xs text-gray-500 mt-1">どのサービスでお知らせを表示するか選択してください</p>
+                                    </div>
                                     <div className="flex gap-2">
                                         <button
                                             type="submit"
@@ -639,7 +658,8 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                                     content: '',
                                                     link_url: '',
                                                     link_text: '',
-                                                    is_active: true
+                                                    is_active: true,
+                                                    service_type: 'all'
                                                 });
                                             }}
                                             className="px-6 bg-gray-100 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"
@@ -662,6 +682,7 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">タイトル</th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">サービス区分</th>
                                                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">状態</th>
                                                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">作成日</th>
                                                 <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase">操作</th>
@@ -671,6 +692,17 @@ const Dashboard = ({ user, onEdit, onDelete, setPage, onLogout, isAdmin }) => {
                                             {announcements.map(announcement => (
                                                 <tr key={announcement.id} className="hover:bg-gray-50">
                                                     <td className="px-4 py-3 font-medium text-gray-900">{announcement.title}</td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                                            announcement.service_type === 'all' ? 'bg-blue-100 text-blue-700' :
+                                                            announcement.service_type === 'quiz' ? 'bg-purple-100 text-purple-700' :
+                                                            'bg-green-100 text-green-700'
+                                                        }`}>
+                                                            {announcement.service_type === 'all' ? '全サービス' :
+                                                             announcement.service_type === 'quiz' ? '診断クイズ' :
+                                                             'プロフィールLP'}
+                                                        </span>
+                                                    </td>
                                                     <td className="px-4 py-3">
                                                         <span className={`px-2 py-1 rounded text-xs font-bold ${
                                                             announcement.is_active 

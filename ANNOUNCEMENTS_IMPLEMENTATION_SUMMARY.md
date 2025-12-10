@@ -28,6 +28,15 @@
 - ✅ AnnouncementsPage コンポーネントに `serviceType="quiz"` を指定
 - ✅ 既存のルーティングはそのまま維持
 
+### 2.5. ダッシュボード（マイページ）の修正
+
+**ファイル:** `components/Dashboard.jsx`
+
+- ✅ 管理者向けお知らせ管理機能に `service_type` フィールドを追加
+- ✅ お知らせフォームに「サービス区分」選択フィールドを追加
+- ✅ お知らせ一覧テーブルに「サービス区分」カラムを追加
+- ✅ サービス区分バッジを表示（全サービス/診断クイズ/プロフィールLP）
+
 ### 3. ヘッダーの修正
 
 **ファイル:** `components/Header.jsx`
@@ -198,6 +207,7 @@ ON announcements(service_type);
 - `components/AnnouncementsPage.jsx` - お知らせページコンポーネント（serviceType機能追加）
 - `app/page.jsx` - メインアプリ（serviceType="quiz"を指定）
 - `components/Header.jsx` - ヘッダー（Bellアイコン追加）
+- `components/Dashboard.jsx` - マイページ（管理者向けお知らせ管理にserviceType機能追加）
 
 ### 新規作成されたファイル
 
