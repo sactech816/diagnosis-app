@@ -49,7 +49,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 
 # OpenAI設定（AI生成機能を使用する場合）
-NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key
+# ⚠️ セキュリティ重要: NEXT_PUBLIC_ プレフィックスは使用しないこと
+OPENAI_API_KEY=your_openai_api_key
 
 # エックスサーバ設定（HTMLファイルの自動転送機能を使用する場合）
 XSERVER_FTP_HOST=your-domain.xsrv.jp

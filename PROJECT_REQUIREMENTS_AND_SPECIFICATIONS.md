@@ -480,7 +480,8 @@ NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com,admin2@example.com
 #### 4.3.2 オプション
 ```env
 # OpenAI（AI生成機能を使用する場合）
-NEXT_PUBLIC_OPENAI_API_KEY=your-openai-api-key
+# ⚠️ セキュリティ重要: サーバーサイド専用（NEXT_PUBLIC_なし）
+OPENAI_API_KEY=your-openai-api-key
 
 # Stripe（決済機能を使用する場合）
 STRIPE_SECRET_KEY=sk_live_... または sk_test_...
