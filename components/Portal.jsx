@@ -197,15 +197,15 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                         {/* メインキャッチコピー */}
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-relaxed mb-8">
                             診断クイズメーカーは<br />
-                            <span className="text-red-600">文章作成、一切不要。</span><br />テンプレートを選ぶだけで、<br />
+                            <span className="text-orange-600">文章作成、一切不要！</span><br />テンプレートを選ぶだけで<br />
 
-                            <span className="text-red-600">あなた専用の「診断クイズ」</span>が<br />無料で完成します。
+                            <span className="text-orange-600">あなた専用の「診断クイズ」</span>が<br />無料で完成します。
                         </h1>
 
                         {/* 補足文 */}
                         <p className="text-base sm:text-lg text-gray-600 mb-10 leading-relaxed">
                         質問・選択肢・結果はすべてセット済み。<br />
-                            あなたは、<span className="font-bold text-gray-800">テンプレートを選んで、誘導先</span>を調整するだけ<br />
+                            あなたは、<span className="font-bold text-gray-800">テンプレートを選んで、LP、LINEのリンク先</span>を調整するだけ<br />
                             面倒な作業ゼロで、今すぐ集客を開始できます。
                         </p>
 
@@ -226,7 +226,7 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                 <div className="bg-white py-16 px-4">
                     <div className="max-w-4xl mx-auto">
                         <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-12">
-                            用途別のひな形を選ぶ
+                            用途別のテンプレートを選ぶ
                         </h2>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -253,7 +253,7 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                                                         onClick={() => handleViewTemplate(template.id)}
                                                         className={`${template.textColor} text-sm font-bold hover:underline inline-flex items-center gap-1`}
                                                     >
-                                                        このひな形を使う
+                                                        このテンプレを使う
                                                         <ArrowRight size={14} />
                                                     </button>
                                                     <button 
