@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, User, LayoutDashboard, TrendingUp, Menu, X, LogOut, HelpCircle, FileText, Lightbulb, Mail, Shield, Scale, PlusCircle, Bell } from 'lucide-react';
+import { Sparkles, User, LayoutDashboard, TrendingUp, Menu, X, LogOut, HelpCircle, FileText, Lightbulb, Mail, Shield, Scale, PlusCircle, Bell, Play } from 'lucide-react';
 
 const Header = ({ setPage, user, onLogout, setShowAuth }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,12 +22,9 @@ const Header = ({ setPage, user, onLogout, setShowAuth }) => {
                     <Sparkles className="text-pink-500"/> 診断クイズメーカー
                 </div>
 
+                {/* PC版：重要な機能のみ外部に表示 */}
                 <div className="hidden md:flex items-center gap-4 text-sm font-bold text-gray-600">
-                    <button onClick={handleCreate} className="hover:text-pink-500 flex items-center gap-1"><PlusCircle size={16}/> 診断を作成</button>
-                    <button onClick={()=>handleNav('logic')} className="hover:text-orange-500 flex items-center gap-1"><Lightbulb size={16}/> 作り方のコツ</button>
-                    <button onClick={()=>handleNav('effective')} className="hover:text-indigo-600 flex items-center gap-1"><TrendingUp size={16}/> 活用法</button>
-                    <button onClick={()=>handleNav('announcements')} className="hover:text-indigo-600 flex items-center gap-1"><Bell size={16}/> お知らせ</button>
-                    <button onClick={()=>handleNav('contact')} className="hover:text-indigo-600 flex items-center gap-1"><Mail size={16}/> お問い合わせ</button>
+                    <button onClick={handleCreate} className="hover:text-pink-500 flex items-center gap-1"><PlusCircle size={16}/> 診断クイズを作成</button>
                     {user ? (
                         <button onClick={()=>handleNav('dashboard')} className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full flex items-center gap-2 hover:bg-indigo-100 transition-colors">
                             <LayoutDashboard size={16}/> マイページ
@@ -39,15 +36,17 @@ const Header = ({ setPage, user, onLogout, setShowAuth }) => {
                     )}
                 </div>
 
-                <button className="md:hidden text-gray-600 p-2" onClick={()=>setIsMenuOpen(!isMenuOpen)}>
+                {/* ハンバーガーメニューボタン（PC・スマホ共通） */}
+                <button className="text-gray-600 p-2" onClick={()=>setIsMenuOpen(!isMenuOpen)}>
                     {isMenuOpen ? <X size={28}/> : <Menu size={28}/>}
                 </button>
             </div>
 
             {isMenuOpen && (
-                <div className="md:hidden bg-white border-t absolute w-full left-0 top-16 shadow-xl py-4 px-6 flex flex-col gap-2 animate-fade-in z-50 h-[calc(100vh-64px)] overflow-y-auto pb-20">
+                <div className="bg-white border-t absolute w-full left-0 top-16 shadow-xl py-4 px-6 flex flex-col gap-2 animate-fade-in z-50 h-[calc(100vh-64px)] overflow-y-auto pb-20">
                     <p className="text-xs font-bold text-gray-400 mt-4 mb-2">メニュー</p>
                     <button onClick={handleCreate} className="flex items-center gap-3 py-3 border-b border-gray-100 text-pink-600 font-bold"><PlusCircle size={20}/> 診断クイズを作成</button>
+                    <button onClick={()=>handleNav('demo-quiz')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-green-600 font-bold"><Play size={20}/> デモを試す</button>
                     <button onClick={()=>handleNav('logic')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-orange-600 font-bold"><Lightbulb size={20}/> 売れる診断の作り方</button>
                     <button onClick={()=>handleNav('effective')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-indigo-600 font-bold"><TrendingUp size={20}/> 効果的な活用法</button>
                     <button onClick={()=>handleNav('announcements')} className="flex items-center gap-3 py-3 border-b border-gray-100 text-indigo-600 font-bold"><Bell size={20}/> お知らせ</button>
