@@ -195,11 +195,11 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                     
                     <div className="relative max-w-2xl mx-auto text-center">
                         {/* メインキャッチコピー */}
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-8">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-relaxed mb-8">
                             診断クイズメーカーは<br />
-                            <span className="text-indigo-600">文章作成、一切不要。</span><br />テンプレートを選ぶだけで、<br />
+                            <span className="text-red-600">文章作成、一切不要。</span><br />テンプレートを選ぶだけで、<br />
 
-                            <span className="text-indigo-600">あなた専用の「診断クイズ」</span>が<br />無料で完成します。
+                            <span className="text-red-600">あなた専用の「診断クイズ」</span>が<br />無料で完成します。
                         </h1>
 
                         {/* 補足文 */}

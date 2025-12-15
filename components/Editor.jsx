@@ -1231,13 +1231,23 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                                 <div className="mb-4 md:mb-0">
                                     <label className="text-sm font-bold text-gray-900 block mb-2">表示レイアウト</label>
                                     <div className="flex gap-2">
-                                        <button onClick={()=>setForm({...form, layout:'card'})} className={`flex-1 py-3 rounded-lg font-bold text-sm border flex items-center justify-center gap-2 ${form.layout==='card' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-500'}`}><Layout size={16}/> カード</br><a href="https://shindan-quiz.makers.tokyo?id=d83bd" target="_blank" rel="noopener">サンプル</a></button>
+                                        <div className="flex-1">
+                                            <button onClick={()=>setForm({...form, layout:'card'})} className={`w-full py-3 rounded-lg font-bold text-sm border flex items-center justify-center gap-2 ${form.layout==='card' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-500'}`}>
+                                                <Layout size={16}/> カード
+                                            </button>
+                                            <a href="https://shindan-quiz.makers.tokyo?id=d83bd" target="_blank" rel="noopener" className="text-xs text-blue-500 hover:underline block text-center mt-1">サンプル</a>
+                                        </div>
 
-                                        <button onClick={()=>setForm({...form, layout:'chat'})} className={`flex-1 py-3 rounded-lg font-bold text-sm border flex items-center justify-center gap-2 ${form.layout==='chat' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-500'}`}><MessageCircle size={16}/> チャット</br><a href="https://shindan-quiz.makers.tokyo/?id=80038" target="_blank" rel="noopener">サンプル</a></button>
+                                        <div className="flex-1">
+                                            <button onClick={()=>setForm({...form, layout:'chat'})} className={`w-full py-3 rounded-lg font-bold text-sm border flex items-center justify-center gap-2 ${form.layout==='chat' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-500'}`}>
+                                                <MessageCircle size={16}/> チャット
+                                            </button>
+                                            <a href="https://shindan-quiz.makers.tokyo/?id=80038" target="_blank" rel="noopener" className="text-xs text-blue-500 hover:underline block text-center mt-1">サンプル</a>
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-bold text-gray-900 block mb-2">デザインテーマ</label>
+                                    <label className="text-sm font-bold text-gray-900 block mb-2">デザインテーマ（いずれか選択）</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         {[
                                             { id: 'standard', name: 'スタンダード', color: 'bg-indigo-600', desc: 'シンプル' },
