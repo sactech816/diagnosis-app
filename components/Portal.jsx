@@ -189,32 +189,34 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                     ファーストビュー（シンプル・機能説明なし）
                 ======================================== */}
                 <div className="relative pt-16 pb-20 px-4 overflow-hidden">
-                    {/* アニメーション背景 */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-cyan-300 to-green-400 animate-gradient-xy"></div>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-purple-400 via-transparent to-orange-300 animate-gradient-xy opacity-70" style={{animationDelay: '2s'}}></div>
+                    {/* アニメーション背景 - より落ち着いた色合いに */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-400 to-pink-400 animate-gradient-xy"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 via-transparent to-purple-500 animate-gradient-xy opacity-60" style={{animationDelay: '2s'}}></div>
+                    {/* 半透明のオーバーレイで背景を少し暗く */}
+                    <div className="absolute inset-0 bg-black/10"></div>
                     
                     <div className="relative max-w-2xl mx-auto text-center">
                         {/* メインキャッチコピー */}
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-relaxed mb-8">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white leading-relaxed mb-8 drop-shadow-lg">
                             診断クイズメーカーは<br />
-                            <span className="text-orange-600">文章作成、一切不要！</span><br />テンプレートを選ぶだけで<br />
+                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg inline-block my-2 text-yellow-300 shadow-xl">文章作成、一切不要！</span><br />テンプレートを選ぶだけで<br />
 
-                            <span className="text-orange-600">あなた専用の「診断クイズ」</span>が<br />無料で完成します。
+                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg inline-block my-2 text-yellow-300 shadow-xl">あなた専用の「診断クイズ」</span>が<br />無料で完成します。
                         </h1>
 
                         {/* 補足文 */}
-                        <p className="text-base sm:text-lg text-gray-600 mb-10 leading-relaxed">
+                        <p className="text-base sm:text-lg text-white/95 mb-10 leading-relaxed drop-shadow-md">
                         質問・選択肢・結果はすべてセット済み。<br />
-                            あなたは、<span className="font-bold text-gray-800">テンプレートを選んで、LP、LINEのリンク先</span>を調整するだけ<br />
+                            あなたは、<span className="font-bold text-white bg-white/20 px-2 py-0.5 rounded">テンプレートを選んで、LP、LINEのリンク先</span>を調整するだけ<br />
                             面倒な作業ゼロで、今すぐ集客を開始できます。
                         </p>
 
                         {/* CTAボタン */}
                         <button 
                             onClick={handleCreate} 
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-full font-bold text-lg transition-all shadow-lg transform hover:scale-105 inline-flex items-center gap-2"
+                            className="bg-white hover:bg-gray-50 text-indigo-600 px-10 py-4 rounded-full font-bold text-lg transition-all shadow-2xl transform hover:scale-105 inline-flex items-center gap-2"
                         >
-                            <Sparkles size={20} className="text-yellow-300" />
+                            <Sparkles size={20} className="text-pink-500" />
                             無料でテンプレから作る
                         </button>
                     </div>
