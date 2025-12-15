@@ -16,7 +16,11 @@
 4. **追加**: 
    - Name: `OPENAI_API_KEY`
    - Value: 新しいキー（ステップ1でコピーしたもの）
-5. Save → Deployments → 最新を「Redeploy」
+5. **複数サービスを運用している場合**:
+   - `OPENAI_API_KEY_QUIZ`（診断クイズメーカー用）
+   - `OPENAI_API_KEY_PROFILE`（プロフィールLPメーカー用）
+   - 詳細は `MULTI_SERVICE_OPENAI_SETUP.md` を参照
+6. Save → Deployments → 最新を「Redeploy」
 
 ### ステップ3: ローカル環境を更新（1分）
 

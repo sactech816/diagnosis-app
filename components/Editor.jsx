@@ -4,10 +4,90 @@ import {
     Sparkles, Wand2, BookOpen, Image as ImageIcon, 
     Layout, MessageCircle, ArrowLeft, Briefcase, GraduationCap, 
     CheckCircle, Shuffle, Plus, Trash2, X, Link, QrCode, UploadCloud, Mail, FileText, ChevronDown, RefreshCw, Eye, 
-    ShoppingCart, Gift, Download, Code, Users, Star, Copy, ExternalLink
+    ShoppingCart, Gift, Download, Code, Users, Star, Copy, ExternalLink, Store, Menu, ChevronLeft
 } from 'lucide-react';
 import { generateSlug } from '../lib/utils';
 import { supabase } from '../lib/supabase';
+
+// --- 用途別テンプレート（プリセットデータ）---
+const USE_CASE_PRESETS = {
+    kindle: {
+        title: "あなたの著者タイプ診断",
+        description: "Kindle出版に向いている執筆スタイルや得意ジャンルを診断します。",
+        mode: "diagnosis", 
+        category: "Business", 
+        color: "bg-amber-600",
+        questions: [
+            {text: "執筆するならどんな時間帯？", options: [{label: "朝型", score: {A:3,B:0,C:0}}, {label: "夜型", score: {A:0,B:3,C:0}}, {label: "昼型", score: {A:0,B:0,C:3}}, {label: "気分次第", score: {A:1,B:1,C:1}}]},
+            {text: "書きたいテーマは？", options: [{label: "実用・ノウハウ", score: {A:3,B:0,C:0}}, {label: "小説・物語", score: {A:0,B:3,C:0}}, {label: "エッセイ・体験談", score: {A:0,B:0,C:3}}, {label: "特にない", score: {A:1,B:1,C:1}}]},
+            {text: "執筆ペースは？", options: [{label: "毎日コツコツ", score: {A:3,B:0,C:0}}, {label: "一気に書く", score: {A:0,B:3,C:0}}, {label: "波がある", score: {A:0,B:0,C:3}}, {label: "締切前", score: {A:1,B:1,C:1}}]},
+            {text: "読者のフィードバックは？", options: [{label: "欲しい", score: {A:3,B:0,C:0}}, {label: "怖い", score: {A:0,B:3,C:0}}, {label: "気になる", score: {A:0,B:0,C:3}}, {label: "見ない", score: {A:1,B:1,C:1}}]},
+            {text: "目標は？", options: [{label: "印税収入", score: {A:3,B:0,C:0}}, {label: "表現したい", score: {A:0,B:3,C:0}}, {label: "権威性構築", score: {A:0,B:0,C:3}}, {label: "趣味", score: {A:1,B:1,C:1}}]}
+        ],
+        results: [
+            {type: "A", title: "実用書タイプ", description: "ノウハウや実用情報を体系的に伝えることが得意です。ビジネス書や自己啓発書で読者の課題解決を目指しましょう。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""},
+            {type: "B", title: "クリエイタータイプ", description: "物語や世界観を作ることに情熱を注げます。小説やエッセイで独自の表現を追求しましょう。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""},
+            {type: "C", title: "発信者タイプ", description: "自分の経験や考えを発信することが得意です。ブログ形式やエッセイで共感を集めましょう。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""}
+        ]
+    },
+    instructor: {
+        title: "あなたの講師スタイル診断",
+        description: "受講生に合った教え方や得意な講座形式を診断します。",
+        mode: "diagnosis", 
+        category: "Business", 
+        color: "bg-blue-600",
+        questions: [
+            {text: "教えるのが得意なのは？", options: [{label: "理論・体系", score: {A:3,B:0,C:0}}, {label: "実践・ワーク", score: {A:0,B:3,C:0}}, {label: "対話・相談", score: {A:0,B:0,C:3}}, {label: "全部", score: {A:1,B:1,C:1}}]},
+            {text: "受講生の質問には？", options: [{label: "その場で回答", score: {A:3,B:0,C:0}}, {label: "後で調べる", score: {A:0,B:3,C:0}}, {label: "一緒に考える", score: {A:0,B:0,C:3}}, {label: "予習必須", score: {A:1,B:1,C:1}}]},
+            {text: "講座の進め方は？", options: [{label: "カリキュラム通り", score: {A:3,B:0,C:0}}, {label: "柔軟に調整", score: {A:0,B:3,C:0}}, {label: "受講生次第", score: {A:0,B:0,C:3}}, {label: "即興", score: {A:1,B:1,C:1}}]},
+            {text: "得意な形式は？", options: [{label: "講義形式", score: {A:3,B:0,C:0}}, {label: "ワークショップ", score: {A:0,B:3,C:0}}, {label: "個別指導", score: {A:0,B:0,C:3}}, {label: "オンライン", score: {A:1,B:1,C:1}}]},
+            {text: "受講生の成長は？", options: [{label: "データで測る", score: {A:3,B:0,C:0}}, {label: "作品で見る", score: {A:0,B:3,C:0}}, {label: "対話で感じる", score: {A:0,B:0,C:3}}, {label: "自己申告", score: {A:1,B:1,C:1}}]}
+        ],
+        results: [
+            {type: "A", title: "体系派講師", description: "理論を体系的に教えることが得意です。資格講座や専門知識を伝える講座に向いています。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""},
+            {type: "B", title: "実践派講師", description: "手を動かして学ぶワーク型講座が得意です。スキル習得や制作系の講座に向いています。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""},
+            {type: "C", title: "伴走派講師", description: "受講生に寄り添い、個別対応が得意です。コーチングやコンサルティング型講座に向いています。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""}
+        ]
+    },
+    store: {
+        title: "来店きっかけ診断",
+        description: "お客様の来店理由や求めているサービスを診断します。",
+        mode: "diagnosis", 
+        category: "Business", 
+        color: "bg-green-600",
+        questions: [
+            {text: "来店のきっかけは？", options: [{label: "SNSで見た", score: {A:3,B:0,C:0}}, {label: "通りがかり", score: {A:0,B:3,C:0}}, {label: "友人の紹介", score: {A:0,B:0,C:3}}, {label: "検索", score: {A:1,B:1,C:1}}]},
+            {text: "求めているのは？", options: [{label: "新商品・トレンド", score: {A:3,B:0,C:0}}, {label: "定番商品", score: {A:0,B:3,C:0}}, {label: "相談・提案", score: {A:0,B:0,C:3}}, {label: "特にない", score: {A:1,B:1,C:1}}]},
+            {text: "予算感は？", options: [{label: "こだわりたい", score: {A:3,B:0,C:0}}, {label: "お手頃に", score: {A:0,B:3,C:0}}, {label: "相場を知りたい", score: {A:0,B:0,C:3}}, {label: "未定", score: {A:1,B:1,C:1}}]},
+            {text: "滞在時間は？", options: [{label: "さっと買いたい", score: {A:3,B:0,C:0}}, {label: "じっくり見たい", score: {A:0,B:3,C:0}}, {label: "相談したい", score: {A:0,B:0,C:3}}, {label: "時間次第", score: {A:1,B:1,C:1}}]},
+            {text: "購入後は？", options: [{label: "SNSで発信", score: {A:3,B:0,C:0}}, {label: "自分で楽しむ", score: {A:0,B:3,C:0}}, {label: "また相談したい", score: {A:0,B:0,C:3}}, {label: "特にない", score: {A:1,B:1,C:1}}]}
+        ],
+        results: [
+            {type: "A", title: "トレンド重視タイプ", description: "新商品や話題の商品をチェックしたいお客様です。SNSでの発信力もあります。新商品コーナーやキャンペーン情報がおすすめです。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""},
+            {type: "B", title: "定番重視タイプ", description: "お気に入りの定番商品を求めるお客様です。安定した品質とコスパを重視します。ロングセラー商品やセット割引がおすすめです。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""},
+            {type: "C", title: "相談重視タイプ", description: "スタッフとの対話を大切にするお客様です。パーソナルな提案を求めています。個別相談やカウンセリングサービスがおすすめです。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""}
+        ]
+    },
+    consultant: {
+        title: "ビジネス課題診断",
+        description: "現在の経営課題や優先的に解決すべきポイントを診断します。",
+        mode: "diagnosis", 
+        category: "Business", 
+        color: "bg-purple-600",
+        questions: [
+            {text: "一番の悩みは？", options: [{label: "売上が伸びない", score: {A:3,B:0,C:0}}, {label: "人材が定着しない", score: {A:0,B:3,C:0}}, {label: "業務が回らない", score: {A:0,B:0,C:3}}, {label: "全部", score: {A:1,B:1,C:1}}]},
+            {text: "マーケティングは？", options: [{label: "何もしていない", score: {A:3,B:0,C:0}}, {label: "SNSのみ", score: {A:2,B:1,C:0}}, {label: "広告出稿中", score: {A:1,B:0,C:2}}, {label: "体系的に実施", score: {A:0,B:1,C:3}}]},
+            {text: "チームの状態は？", options: [{label: "人手不足", score: {A:0,B:3,C:1}}, {label: "スキル不足", score: {A:1,B:3,C:0}}, {label: "モチベーション低下", score: {A:0,B:3,C:1}}, {label: "問題なし", score: {A:1,B:0,C:2}}]},
+            {text: "業務フローは？", options: [{label: "属人化している", score: {A:0,B:1,C:3}}, {label: "マニュアルなし", score: {A:1,B:2,C:3}}, {label: "一部仕組化済", score: {A:1,B:1,C:2}}, {label: "完全に仕組化", score: {A:2,B:1,C:0}}]},
+            {text: "今後の目標は？", options: [{label: "売上2倍", score: {A:3,B:0,C:0}}, {label: "組織強化", score: {A:0,B:3,C:0}}, {label: "仕組み化", score: {A:0,B:0,C:3}}, {label: "現状維持", score: {A:1,B:1,C:1}}]}
+        ],
+        results: [
+            {type: "A", title: "売上拡大フェーズ", description: "マーケティング強化と新規顧客獲得が最優先です。Web集客やセールス体制の構築から始めましょう。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""},
+            {type: "B", title: "組織強化フェーズ", description: "採用・育成・定着が最優先です。評価制度の整備や社内コミュニケーション改善から始めましょう。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""},
+            {type: "C", title: "仕組化フェーズ", description: "業務効率化と標準化が最優先です。マニュアル整備やITツール導入から始めましょう。", link_url: "", link_text: "", line_url: "", line_text: "", qr_url: "", qr_text: ""}
+        ]
+    }
+};
 
 // --- プリセットデータ定義 ---
 const PRESETS = {
@@ -233,6 +313,14 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
   useEffect(() => { 
     document.title = "クイズ作成・編集 | 診断クイズメーカー"; 
     window.scrollTo(0, 0);
+    
+    // 用途別テンプレートIDが渡された場合、テンプレートを適用
+    if (initialData?.templateId && USE_CASE_PRESETS[initialData.templateId]) {
+      const preset = USE_CASE_PRESETS[initialData.templateId];
+      setForm({ ...defaultForm, ...preset });
+      // ステップ2（基本設定）に進む
+      setCurrentStep(2);
+    }
   }, []);
 
   // ステップ遷移時にスクロール位置を最上位に戻す
@@ -250,12 +338,13 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
   const [hideLoginBanner, setHideLoginBanner] = useState(false);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [justSavedQuizId, setJustSavedQuizId] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // 初期状態は閉じている
 
   const STEPS = [
-      { id: 1, icon: Sparkles, label: 'クイズの種類', description: 'テンプレートまたはAI生成' },
-      { id: 2, icon: Edit3, label: '基本設定', description: 'タイトルや画像を設定' },
-      { id: 3, icon: MessageSquare, label: '質問作成', description: '質問と選択肢を作成' },
-      { id: 4, icon: Trophy, label: '結果ページ', description: '診断結果を設定' }
+      { id: 1, icon: Sparkles, label: '1.クイズの種類', description: 'テンプレートまたはAI生成' },
+      { id: 2, icon: Edit3, label: '2.基本設定', description: 'タイトルや画像を設定' },
+      { id: 3, icon: MessageSquare, label: '3.質問作成', description: '質問と選択肢を作成' },
+      { id: 4, icon: Trophy, label: '4.結果ページ', description: '診断結果を設定' }
   ];
 
   const defaultForm = {
@@ -804,55 +893,98 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
         <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
             {/* サイドバー（ステップ1以外で表示） */}
             {currentStep !== 1 && (
-            <div className="bg-white border-b md:border-b-0 md:border-r flex flex-col w-full md:w-64 shrink-0">
-                {/* クイックアクション */}
-                <div className="p-4 bg-gradient-to-b from-indigo-50 to-white border-b">
-                    <p className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1">
-                        <Sparkles size={14}/> クイックアクション
-                    </p>
+            <div className={`bg-white border-b md:border-b-0 md:border-r flex flex-col shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'w-12 md:w-12' : 'w-full md:w-64'}`}>
+                {/* サイドバー開閉ボタン */}
+                <div className="p-2 border-b flex justify-center">
                     <button 
-                        onClick={() => setCurrentStep(1)} 
-                        className="w-full bg-white border border-indigo-200 text-indigo-600 py-2 px-3 rounded-lg font-bold text-xs hover:bg-indigo-50 transition-all mb-2 flex items-center justify-center gap-1"
+                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title={sidebarCollapsed ? "メニューを開く" : "メニューを閉じる"}
                     >
-                        <FileText size={12}/> テンプレート選択
-                    </button>
-                    <button 
-                        onClick={() => setCurrentStep(1)} 
-                        className="w-full bg-white border border-purple-200 text-purple-600 py-2 px-3 rounded-lg font-bold text-xs hover:bg-purple-50 transition-all flex items-center justify-center gap-1"
-                    >
-                        <Wand2 size={12}/> AI自動生成
+                        {sidebarCollapsed ? <Menu size={20} className="text-gray-600"/> : <ChevronLeft size={20} className="text-gray-600"/>}
                     </button>
                 </div>
 
-                {/* ステップナビゲーション */}
-                <div className="p-4 border-b">
-                    <p className="text-xs font-bold text-gray-500 mb-3">ステップ移動</p>
-                    <div className="space-y-2">
+                {/* 折りたたみ時のステップアイコン表示 */}
+                {sidebarCollapsed && (
+                    <div className="p-2 space-y-2">
                         {STEPS.map(step => (
                             <button
                                 key={step.id}
                                 onClick={() => setCurrentStep(step.id)}
-                                className={`w-full text-left px-3 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2 ${
+                                className={`w-full p-2 rounded-lg transition-all flex items-center justify-center ${
                                     currentStep === step.id
                                         ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                                         : 'text-gray-600 hover:bg-gray-50'
                                 }`}
+                                title={step.label}
                             >
-                                <step.icon size={14} />
-                                <span>{step.label}</span>
+                                <step.icon size={16} />
                             </button>
                         ))}
                     </div>
-                </div>
+                )}
 
-                {/* 使い方リンク */}
-                <div className="p-4 border-b">
-                    <a href="/?page=howto" target="_blank" rel="noopener noreferrer" className="w-full px-3 py-2 text-left text-xs text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-lg flex items-center gap-2 transition-all block">
-                        <BookOpen size={14}/> 使い方・規約を見る（新しいタブ）
-                    </a>
-                </div>
+                {!sidebarCollapsed && (
+                    <>
+                        {/* クイックアクション */}
+                        <div className="p-4 bg-gradient-to-b from-indigo-50 to-white border-b">
+                            <p className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1">
+                                <Sparkles size={14}/> クイックアクション
+                            </p>
+                            <button 
+                                onClick={() => setCurrentStep(1)} 
+                                className="w-full bg-white border border-indigo-200 text-indigo-600 py-2 px-3 rounded-lg font-bold text-xs hover:bg-indigo-50 transition-all mb-2 flex items-center justify-center gap-1"
+                            >
+                                <FileText size={12}/> テンプレート選択
+                            </button>
+                            <button 
+                                onClick={() => setCurrentStep(1)} 
+                                className="w-full bg-white border border-purple-200 text-purple-600 py-2 px-3 rounded-lg font-bold text-xs hover:bg-purple-50 transition-all flex items-center justify-center gap-1"
+                            >
+                                <Wand2 size={12}/> AI自動生成
+                            </button>
+                        </div>
+                    </>
+                )}
 
-                <div className="flex-grow"></div>
+                {!sidebarCollapsed && (
+                    <>
+                        {/* ステップナビゲーション */}
+                        <div className="p-4 border-b">
+                            <p className="text-xs font-bold text-gray-500 mb-3">ステップ移動</p>
+                            <div className="space-y-2">
+                                {STEPS.map(step => (
+                                    <button
+                                        key={step.id}
+                                        onClick={() => setCurrentStep(step.id)}
+                                        className={`w-full text-left px-3 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2 ${
+                                            currentStep === step.id
+                                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                                : 'text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <step.icon size={14} />
+                                        <span>{step.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {!sidebarCollapsed && (
+                    <>
+                        {/* 使い方リンク */}
+                        <div className="p-4 border-b">
+                            <a href="/?page=howto" target="_blank" rel="noopener noreferrer" className="w-full px-3 py-2 text-left text-xs text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-lg flex items-center gap-2 transition-all block">
+                                <BookOpen size={14}/> 使い方・規約を見る（新しいタブ）
+                            </a>
+                        </div>
+
+                        <div className="flex-grow"></div>
+                    </>
+                )}
             </div>
             )}
 
@@ -905,17 +1037,79 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                             <div className="mb-10">
                                 <h4 className="font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
                                     <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
-                                    作成方法を選択
+                                    作成方法を選択（用途別、その他テンプレートかAIから自動作成のいずれかをご利用ください）
                                 </h4>
                                 <div className="grid grid-cols-1 gap-4">
-                                    {/* テンプレートから作成 */}
+                                    {/* 用途別テンプレート */}
+                                    <div className="border-2 border-indigo-300 rounded-xl p-6 bg-gradient-to-br from-indigo-50 to-white">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="bg-indigo-100 p-3 rounded-lg">
+                                                <Sparkles size={24} className="text-indigo-600"/>
+                                            </div>
+                                            <div>
+                                                <h5 className="font-bold text-gray-900 flex items-center gap-2">
+                                                    用途別テンプレートから作成
+                                                    <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full">おすすめ</span>
+                                                </h5>
+                                                <p className="text-xs text-gray-500">すぐに使える実践的なテンプレート</p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button 
+                                                onClick={() => { 
+                                                    if(!confirm('「キンドル著者向けテンプレート」を適用しますか？\n現在の入力内容は上書きされます。')) return;
+                                                    setForm({ ...defaultForm, ...USE_CASE_PRESETS.kindle }); 
+                                                    setCurrentStep(2);
+                                                }}
+                                                className="p-3 rounded-lg border-2 font-bold text-sm transition-all flex items-center gap-2 bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                                            >
+                                                <BookOpen size={16}/>
+                                                <span className="truncate">キンドル著者</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => { 
+                                                    if(!confirm('「講師向けテンプレート」を適用しますか？\n現在の入力内容は上書きされます。')) return;
+                                                    setForm({ ...defaultForm, ...USE_CASE_PRESETS.instructor }); 
+                                                    setCurrentStep(2);
+                                                }}
+                                                className="p-3 rounded-lg border-2 font-bold text-sm transition-all flex items-center gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                                            >
+                                                <Users size={16}/>
+                                                <span className="truncate">講師</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => { 
+                                                    if(!confirm('「店舗向けテンプレート」を適用しますか？\n現在の入力内容は上書きされます。')) return;
+                                                    setForm({ ...defaultForm, ...USE_CASE_PRESETS.store }); 
+                                                    setCurrentStep(2);
+                                                }}
+                                                className="p-3 rounded-lg border-2 font-bold text-sm transition-all flex items-center gap-2 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                            >
+                                                <Store size={16}/>
+                                                <span className="truncate">店舗</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => { 
+                                                    if(!confirm('「コンサル向けテンプレート」を適用しますか？\n現在の入力内容は上書きされます。')) return;
+                                                    setForm({ ...defaultForm, ...USE_CASE_PRESETS.consultant }); 
+                                                    setCurrentStep(2);
+                                                }}
+                                                className="p-3 rounded-lg border-2 font-bold text-sm transition-all flex items-center gap-2 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                                            >
+                                                <Briefcase size={16}/>
+                                                <span className="truncate">コンサル</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* その他のテンプレートから作成 */}
                                     <div className="border-2 border-gray-200 rounded-xl p-6 bg-white hover:border-indigo-300 transition-all">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="bg-blue-100 p-3 rounded-lg">
                                                 <FileText size={24} className="text-blue-600"/>
                                             </div>
                                             <div>
-                                                <h5 className="font-bold text-gray-900">テンプレートから作成</h5>
+                                                <h5 className="font-bold text-gray-900">その他のテンプレートから作成</h5>
                                                 <p className="text-xs text-gray-500">プロが作ったサンプルをカスタマイズ</p>
                                             </div>
                                         </div>

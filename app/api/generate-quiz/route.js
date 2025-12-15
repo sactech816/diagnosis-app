@@ -5,7 +5,8 @@ export async function POST(request) {
     const { theme, mode } = await request.json();
 
     // サーバー側でAPIキーを取得（NEXT_PUBLIC_なし）
-    const apiKey = process.env.OPENAI_API_KEY;
+    // 診断クイズ専用のキーを優先、なければデフォルトを使用
+    const apiKey = process.env.OPENAI_API_KEY_QUIZ || process.env.OPENAI_API_KEY;
     
     if (!apiKey) {
       return NextResponse.json(

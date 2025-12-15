@@ -806,14 +806,7 @@ const App = () => {
                 setShowAuth={setShowAuth} 
                 onLogout={async ()=>{ await supabase.auth.signOut(); alert('ログアウトしました'); }} 
                 onPlay={(q)=>{ setSelectedQuiz(q); navigateTo('quiz', { id: q.slug || q.id }); }} 
-                onCreate={(options)=>{ 
-                    setEditingQuiz(null); 
-                    // テンプレートIDがある場合は、editingQuizにテンプレートIDを設定
-                    if (options?.templateId) {
-                        setEditingQuiz({ templateId: options.templateId });
-                    }
-                    navigateTo('editor'); 
-                }} 
+                onCreate={()=>{ setEditingQuiz(null); navigateTo('editor'); }} 
                 setPage={(p) => navigateTo(p)} 
                 onEdit={(q)=>{ setEditingQuiz(q); navigateTo('editor'); }} 
                 onDelete={handleDelete} 
