@@ -1005,7 +1005,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                                 <div className="mb-10">
                                     <h4 className="font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
                                         <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
-                                        クイズの種類
+                                        クイズの種類（ビジネス利用、テスト形式、ランダム運勢）
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <button onClick={()=>switchMode('diagnosis')} className={`p-6 rounded-xl border-2 font-bold flex flex-col items-center gap-3 transition-all hover:shadow-lg ${form.mode==='diagnosis' ? 'border-indigo-600 bg-indigo-50 shadow-md' : 'border-gray-200 bg-white'}`}>
@@ -1037,7 +1037,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                             <div className="mb-10">
                                 <h4 className="font-bold text-lg mb-4 text-gray-900 flex items-center gap-2">
                                     <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
-                                    作成方法を選択（用途別、その他テンプレートかAIから自動作成のいずれかをご利用ください）
+                                    作成方法を選択（テンプレート利用、AIから自動作成、ゼロから作成）
                                 </h4>
                                 <div className="grid grid-cols-1 gap-4">
                                     {/* 用途別テンプレート */}
@@ -1231,8 +1231,9 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                                 <div className="mb-4 md:mb-0">
                                     <label className="text-sm font-bold text-gray-900 block mb-2">表示レイアウト</label>
                                     <div className="flex gap-2">
-                                        <button onClick={()=>setForm({...form, layout:'card'})} className={`flex-1 py-3 rounded-lg font-bold text-sm border flex items-center justify-center gap-2 ${form.layout==='card' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-500'}`}><Layout size={16}/> カード</button>
-                                        <button onClick={()=>setForm({...form, layout:'chat'})} className={`flex-1 py-3 rounded-lg font-bold text-sm border flex items-center justify-center gap-2 ${form.layout==='chat' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-500'}`}><MessageCircle size={16}/> チャット</button>
+                                        <button onClick={()=>setForm({...form, layout:'card'})} className={`flex-1 py-3 rounded-lg font-bold text-sm border flex items-center justify-center gap-2 ${form.layout==='card' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-500'}`}><Layout size={16}/> カード</br><a href="https://shindan-quiz.makers.tokyo?id=d83bd" target="_blank" rel="noopener">サンプル</a></button>
+
+                                        <button onClick={()=>setForm({...form, layout:'chat'})} className={`flex-1 py-3 rounded-lg font-bold text-sm border flex items-center justify-center gap-2 ${form.layout==='chat' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-500'}`}><MessageCircle size={16}/> チャット</br><a href="https://shindan-quiz.makers.tokyo/?id=80038" target="_blank" rel="noopener">サンプル</a></button>
                                     </div>
                                 </div>
                                 <div>
@@ -1262,7 +1263,7 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                             </div>
 
                             <div className="mt-6 mb-6">
-                                <label className="text-sm font-bold text-gray-900 block mb-2">メイン画像</label>
+                                <label className="text-sm font-bold text-gray-900 block mb-2">メイン画像（任意）</label>
                                 <div className="flex flex-col md:flex-row gap-2">
                                     <input className="flex-grow border border-gray-300 p-3 rounded-lg text-black font-bold focus:ring-2 focus:ring-indigo-500 outline-none bg-white placeholder-gray-400" value={form.image_url||''} onChange={e=>setForm({...form, image_url:e.target.value})} placeholder="画像URL (https://...) またはアップロード"/>
                                     <label className="bg-indigo-50 text-indigo-700 px-4 py-3 rounded-lg font-bold hover:bg-indigo-100 flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap">

@@ -190,8 +190,8 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                 ======================================== */}
                 <div className="relative pt-16 pb-20 px-4 overflow-hidden">
                     {/* アニメーション背景 */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 animate-gradient-xy"></div>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-100 via-transparent to-yellow-100 animate-gradient-xy opacity-70" style={{animationDelay: '2s'}}></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-cyan-300 to-green-400 animate-gradient-xy"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-purple-400 via-transparent to-orange-300 animate-gradient-xy opacity-70" style={{animationDelay: '2s'}}></div>
                     
                     <div className="relative max-w-2xl mx-auto text-center">
                         {/* メインキャッチコピー */}
