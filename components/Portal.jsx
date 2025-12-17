@@ -199,9 +199,8 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                         {/* メインキャッチコピー */}
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white leading-relaxed mb-8 drop-shadow-lg">
                             診断クイズメーカーは<br />
-                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg inline-block my-2 text-yellow-300 shadow-xl">文章作成、一切不要！</span><br />テンプレートを選ぶだけで<br />
 
-                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg inline-block my-2 text-yellow-300 shadow-xl">あなた専用の「診断クイズ」</span>が<br />無料で完成します。
+                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg inline-block my-2 text-yellow-300 shadow-xl">あなた専用の「診断クイズ」</span>が無料で完成します。
                         </h1>
 
                         {/* 補足文 */}
