@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Loader2, Trophy, ExternalLink, MessageCircle, QrCode, RefreshCw, Home, Twitter, Share2, CheckCircle, XCircle, Sparkles, Mail } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, ExternalLink, MessageCircle, QrCode, RefreshCw, Home, Twitter, Share2, CheckCircle, XCircle, Sparkles, Mail, Download } from 'lucide-react';
 import SEO from './SEO';
 import { supabase } from '../lib/supabase';
 import { calculateResult } from '../lib/utils';
 import confetti from 'canvas-confetti';
+import html2canvas from 'html2canvas';
 
 const ResultView = ({ quiz, result, onRetry, onBack, playableQuestions, answers }) => {
   const [showHistory, setShowHistory] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const resultImageRef = useRef(null);
   
   useEffect(() => { 
       document.title = `${result.title} | 結果発表`;
@@ -36,23 +39,68 @@ const ResultView = ({ quiz, result, onRetry, onBack, playableQuestions, answers 
   const handleShareX = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
   const handleShareLine = () => window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`, '_blank');
 
+  const handleDownloadImage = async () => {
+    setDownloading(true);
+    try {
+      const element = resultImageRef.current;
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2, // 高解像度
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        foreignObjectRendering: false,
+        ignoreElements: (element) => {
+          // アニメーション要素を除外
+          return element.classList?.contains('animate-bounce');
+        }
+      });
+      
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `診断結果_${quiz.title}_${Date.now()}.jpg`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        setDownloading(false);
+      }, 'image/jpeg', 0.95);
+    } catch (error) {
+      console.error('画像生成エラー:', error);
+      alert('画像のダウンロードに失敗しました');
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="max-w-xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden my-8 animate-fade-in border border-gray-100 flex flex-col min-h-[80vh]">
-        <div className={`${quiz.color || 'bg-indigo-600'} text-white p-10 text-center relative overflow-hidden transition-colors duration-500`}>
-            {quiz.image_url && <img src={quiz.image_url} className="absolute inset-0 w-full h-full object-cover opacity-20"/>}
-            <div className="absolute top-0 left-0 w-full h-full bg-white opacity-10" style={{backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
-            <Trophy className="mx-auto mb-4 text-yellow-300 relative z-10 animate-bounce" size={56} />
-            {quiz.mode === 'test' && (
-                <div className="relative z-10 mb-2 text-2xl font-bold bg-white/20 inline-block px-4 py-1 rounded-full">
-                    {result.score} / {result.total} 問正解
-                </div>
-            )}
-            <h2 className="text-3xl font-extrabold mt-2 relative z-10">{result.title}</h2>
-        </div>
-        <div className="p-8 md:p-10 flex-grow">
-            <div className="prose text-gray-800 leading-relaxed whitespace-pre-wrap mb-10 text-sm md:text-base">
-                {result.description}
+        {/* 画像ダウンロード用の領域 */}
+        <div ref={resultImageRef}>
+            <div className={`${quiz.color || 'bg-indigo-600'} text-white p-10 text-center relative overflow-hidden transition-colors duration-500`}>
+                {quiz.image_url && <img src={quiz.image_url} className="absolute inset-0 w-full h-full object-cover opacity-20"/>}
+                <div className="absolute top-0 left-0 w-full h-full bg-white opacity-10" style={{backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
+                <Trophy className="mx-auto mb-4 text-yellow-300 relative z-10 animate-bounce" size={56} />
+                {quiz.mode === 'test' && (
+                    <div className="relative z-10 mb-2 text-2xl font-bold bg-white/20 inline-block px-4 py-1 rounded-full">
+                        {result.score} / {result.total} 問正解
+                    </div>
+                )}
+                <h2 className="text-3xl font-extrabold mt-2 relative z-10">{result.title}</h2>
             </div>
+            <div className="p-8 md:p-10">
+                <div className="prose text-gray-800 leading-relaxed whitespace-pre-wrap mb-10 text-sm md:text-base">
+                    {result.description}
+                </div>
+                {/* 画像用フッター（通常は非表示） */}
+                <div className="text-center pt-6 border-t border-gray-200">
+                    <p className="text-xs text-gray-400">診断クイズメーカーで作成しました</p>
+                    <p className="text-xs text-gray-400 mt-1">https://shindan-quiz.makers.tokyo/</p>
+                </div>
+            </div>
+        </div>
+        
+        <div className="p-8 md:p-10 pt-0 flex-grow">
+            {/* 通常表示用のフッター（画像には含まれない） */}
             
             {/* 診断履歴セクション */}
             {playableQuestions && answers && (
@@ -110,6 +158,27 @@ const ResultView = ({ quiz, result, onRetry, onBack, playableQuestions, answers 
                     <button onClick={handleShareLine} className="bg-[#06C755] text-white p-3 rounded-full shadow hover:scale-110 transition-transform"><MessageCircle size={20}/></button>
                     <button onClick={()=>{navigator.clipboard.writeText(shareUrl); alert('URLをコピーしました');}} className="bg-gray-200 text-gray-600 p-3 rounded-full shadow hover:scale-110 transition-transform"><Share2 size={20}/></button>
                 </div>
+            </div>
+
+            {/* 画像ダウンロードボタン */}
+            <div className="mb-8">
+                <button 
+                    onClick={handleDownloadImage} 
+                    disabled={downloading}
+                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-center font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transform transition hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {downloading ? (
+                        <>
+                            <Loader2 className="animate-spin" size={20}/>
+                            画像を生成中...
+                        </>
+                    ) : (
+                        <>
+                            <Download size={20}/>
+                            結果を画像でダウンロード
+                        </>
+                    )}
+                </button>
             </div>
 
             <div className="space-y-4 mb-8">

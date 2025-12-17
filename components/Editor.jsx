@@ -505,13 +505,17 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
       if(!aiTheme) return alert('どんな診断を作りたいかテーマを入力してください');
       setIsGenerating(true);
       try {
+          // 既存の結果タイプを取得（A, B, C...）
+          const existingResultTypes = form.results.map(r => r.type);
+          
           // バックエンドAPIを経由してAI生成（セキュリティ強化）
           const res = await fetch("/api/generate-quiz", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ 
                   theme: aiTheme,
-                  mode: form.mode 
+                  mode: form.mode,
+                  resultTypes: existingResultTypes // 既存のタイプを送信
               })
           });
           
@@ -521,9 +525,17 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
           }
           
           const { data: json } = await res.json();
+          
+          // 既存の結果タイプを保持しつつ、AIが生成した内容を適用
+          const adjustedResults = json.results.map((r, idx) => ({
+              ...r,
+              type: existingResultTypes[idx] || r.type // 既存タイプを優先
+          }));
+          
           setForm(prev => ({ 
-              ...prev, ...json,
-              results: json.results.map(r => ({link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"", ...r}))
+              ...prev, 
+              ...json,
+              results: adjustedResults.map(r => ({link_url:"", link_text:"", line_url:"", line_text:"", qr_url:"", qr_text:"", ...r}))
           })); 
           alert('AI生成が完了しました！');
       } catch(e) { 

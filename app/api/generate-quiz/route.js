@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { theme, mode } = await request.json();
+    const { theme, mode, resultTypes } = await request.json();
 
     // サーバー側でAPIキーを取得（NEXT_PUBLIC_なし）
     // 診断クイズ専用のキーを優先、なければデフォルトを使用
@@ -22,6 +22,11 @@ export async function POST(request) {
       );
     }
 
+    // 結果タイプの指定（既存のタイプを保持）
+    const typesStr = resultTypes && resultTypes.length > 0 
+      ? resultTypes.join(', ') 
+      : 'A, B, C';
+
     // プロンプト生成
     let prompt = "";
     if (mode === 'test') {
@@ -31,6 +36,9 @@ export async function POST(request) {
     } else {
       prompt = `テーマ「${theme}」の性格/タイプ診断を作成して。質問5つ。結果は3タイプ。`;
     }
+    
+    // 結果タイプを明示的に指定
+    prompt += ` 重要: 結果のtypeは必ず「${typesStr}」を使用すること。質問のscoreオブジェクトのキーも同じ「${typesStr}」を使用すること。`;
 
     // OpenAI API呼び出し
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -43,7 +51,7 @@ export async function POST(request) {
         model: "gpt-3.5-turbo",
         messages: [{
           role: "user",
-          content: prompt + `出力はJSON形式のみ: {title, description, questions:[{text, options:[{label, score:{A,B,C}}]...], results:[{type, title, description, link_url, link_text, line_url, line_text, qr_url, qr_text}]}`
+          content: prompt + ` 出力はJSON形式のみ: {title, description, questions:[{text, options:[{label, score:{${typesStr}}}]...], results:[{type, title, description, link_url, link_text, line_url, line_text, qr_url, qr_text}]} ※typeとscoreのキーは必ず「${typesStr}」を使用`
         }]
       })
     });
