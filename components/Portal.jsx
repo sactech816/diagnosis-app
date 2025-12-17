@@ -216,7 +216,7 @@ const Portal = ({ quizzes, isLoading, user, setShowAuth, onLogout, onPlay, onCre
                             className="bg-white hover:bg-gray-50 text-indigo-600 px-10 py-4 rounded-full font-bold text-lg transition-all shadow-2xl transform hover:scale-105 inline-flex items-center gap-2"
                         >
                             <Sparkles size={20} className="text-pink-500" />
-                            無料でテンプレから作る
+                            無料で診断クイズを作る
                         </button>
                     </div>
                 </div>
