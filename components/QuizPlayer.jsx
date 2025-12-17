@@ -5,7 +5,9 @@ import { supabase } from '../lib/supabase';
 import { calculateResult } from '../lib/utils';
 import confetti from 'canvas-confetti';
 
-const ResultView = ({ quiz, result, onRetry, onBack }) => {
+const ResultView = ({ quiz, result, onRetry, onBack, playableQuestions, answers }) => {
+  const [showHistory, setShowHistory] = useState(true);
+  
   useEffect(() => { 
       document.title = `${result.title} | 結果発表`;
       // ★削除: 完了数カウントは showResultOrEmail で実行済み
@@ -51,6 +53,55 @@ const ResultView = ({ quiz, result, onRetry, onBack }) => {
             <div className="prose text-gray-800 leading-relaxed whitespace-pre-wrap mb-10 text-sm md:text-base">
                 {result.description}
             </div>
+            
+            {/* 診断履歴セクション */}
+            {playableQuestions && answers && (
+                <div className="mb-8">
+                    <label className="flex items-center gap-2 cursor-pointer mb-4 text-sm font-bold text-gray-700">
+                        <input 
+                            type="checkbox" 
+                            checked={showHistory} 
+                            onChange={(e) => setShowHistory(e.target.checked)}
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <span>診断履歴を表示する</span>
+                    </label>
+                    
+                    {showHistory && (
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border border-indigo-100 shadow-sm">
+                            <h3 className="text-sm font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                                <Sparkles size={16} className="text-indigo-600"/>
+                                あなたの回答履歴
+                            </h3>
+                            <div className="space-y-3">
+                                {playableQuestions.map((q, idx) => {
+                                    const userAnswer = answers[idx];
+                                    return (
+                                        <div key={idx} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                                            <div className="flex items-start gap-2 mb-2">
+                                                <span className="text-xs font-bold text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full flex-shrink-0">
+                                                    Q{idx + 1}
+                                                </span>
+                                                <p className="text-sm font-bold text-gray-800 leading-relaxed flex-grow">
+                                                    {q.text}
+                                                </p>
+                                            </div>
+                                            {userAnswer && (
+                                                <div className="flex items-center gap-2 ml-2 mt-2 pl-4 border-l-2 border-green-400">
+                                                    <CheckCircle size={16} className="text-green-600 flex-shrink-0"/>
+                                                    <span className="text-sm text-gray-700 font-medium">
+                                                        {userAnswer.label}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
             
             <div className="bg-gray-50 p-4 rounded-xl mb-8 text-center border border-gray-100">
                 <p className="text-xs font-bold text-gray-500 mb-3">結果をシェアする</p>
@@ -256,7 +307,14 @@ const QuizPlayer = ({ quiz, onBack }) => {
       return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
             <SEO title={`${result.title} | 結果`} description={result.description.substring(0, 100)} image={quiz.image_url} />
-            <ResultView quiz={quiz} result={result} onRetry={() => {setResult(null); setCurrentStep(0); setAnswers({}); setChatHistory([]); setShowEmailForm(false); setEmail('');}} onBack={onBack} />
+            <ResultView 
+                quiz={quiz} 
+                result={result} 
+                playableQuestions={playableQuestions}
+                answers={answers}
+                onRetry={() => {setResult(null); setCurrentStep(0); setAnswers({}); setChatHistory([]); setShowEmailForm(false); setEmail('');}} 
+                onBack={onBack} 
+            />
         </div>
       ); 
   }
