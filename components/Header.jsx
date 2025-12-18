@@ -22,24 +22,27 @@ const Header = ({ setPage, user, onLogout, setShowAuth }) => {
                     <Sparkles className="text-pink-500"/> 診断クイズメーカー
                 </div>
 
-                {/* PC版：重要な機能のみ外部に表示 */}
-                <div className="hidden md:flex items-center gap-4 text-sm font-bold text-gray-600">
-                    <button onClick={handleCreate} className="hover:text-pink-500 flex items-center gap-1"><PlusCircle size={16}/> 診断クイズを作成</button>
-                    {user ? (
-                        <button onClick={()=>handleNav('dashboard')} className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full flex items-center gap-2 hover:bg-indigo-100 transition-colors">
-                            <LayoutDashboard size={16}/> マイページ
-                        </button>
-                    ) : (
-                        <button onClick={()=>setShowAuth(true)} className="bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition-colors flex items-center gap-2">
-                            <User size={16}/> ログイン
-                        </button>
-                    )}
-                </div>
+                {/* 右側メニューエリア */}
+                <div className="flex items-center gap-2">
+                    {/* PC版：重要な機能のみ外部に表示 */}
+                    <div className="hidden md:flex items-center gap-4 text-sm font-bold text-gray-600">
+                        <button onClick={handleCreate} className="hover:text-pink-500 flex items-center gap-1"><PlusCircle size={16}/> 診断クイズを作成</button>
+                        {user ? (
+                            <button onClick={()=>handleNav('dashboard')} className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full flex items-center gap-2 hover:bg-indigo-100 transition-colors">
+                                <LayoutDashboard size={16}/> マイページ
+                            </button>
+                        ) : (
+                            <button onClick={()=>setShowAuth(true)} className="bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition-colors flex items-center gap-2">
+                                <User size={16}/> ログイン
+                            </button>
+                        )}
+                    </div>
 
-                {/* ハンバーガーメニューボタン（PC・スマホ共通） */}
-                <button className="text-gray-600 p-2" onClick={()=>setIsMenuOpen(!isMenuOpen)}>
-                    {isMenuOpen ? <X size={28}/> : <Menu size={28}/>}
-                </button>
+                    {/* ハンバーガーメニューボタン（PC・スマホ共通） */}
+                    <button className="text-gray-600 p-2" onClick={()=>setIsMenuOpen(!isMenuOpen)}>
+                        {isMenuOpen ? <X size={28}/> : <Menu size={28}/>}
+                    </button>
+                </div>
             </div>
 
             {isMenuOpen && (
