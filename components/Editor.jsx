@@ -328,7 +328,8 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
     window.scrollTo(0, 0);
   }, [currentStep]);
   const [isSaving, setIsSaving] = useState(false);
-  const [savedId, setSavedId] = useState(null);
+  const [savedId, setSavedId] = useState(null);  // 数値ID（データベースのid）
+  const [savedSlug, setSavedSlug] = useState(null);  // 文字列slug（公開URL用）
   const [aiTheme, setAiTheme] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -790,8 +791,8 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                 <button onClick={() => setShowPreview(!showPreview)} className="bg-purple-50 border border-purple-200 text-purple-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-purple-100 whitespace-nowrap transition-all">
                     <Eye size={18}/> <span className="hidden md:inline">プレビュー</span>
                 </button>
-                {(savedId || initialData?.slug || initialData?.id) && (
-                    <button onClick={() => handlePublish(savedId || initialData?.slug || initialData?.id)} className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2 animate-pulse whitespace-nowrap">
+                {(savedSlug || initialData?.slug || initialData?.id) && (
+                    <button onClick={() => handlePublish(savedSlug || initialData?.slug || initialData?.id)} className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2 animate-pulse whitespace-nowrap">
                         <Share2 size={18}/> <span className="hidden md:inline">公開URL</span>
                     </button>
                 )}
@@ -810,12 +811,17 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                             collect_email: form.collect_email || false,
                             regenerateSlug: regenerateSlug
                         };
-                        const returnedId = await onSave(saveData, savedId || initialData?.id);
-                        if(returnedId) {
-                            setSavedId(returnedId);
+                        // 編集時のみ数値IDを渡す（テンプレートのtemplateIdは除外）
+                        const existingId = savedId || (initialData?.id && !initialData?.templateId ? initialData.id : null);
+                        const result = await onSave(saveData, existingId);
+                        if(result) {
+                            setSavedId(result.id);
+                            setSavedSlug(result.slug);
                             // 新規作成時のみ寄付モーダルを表示
-                            if (!initialData && !savedId) {
-                                setJustSavedQuizId(returnedId);
+                            // initialDataがない、またはtemplateIdのみの場合は新規作成
+                            const isNewCreation = !initialData || (initialData.templateId && !initialData.id);
+                            if (isNewCreation && !savedId) {
+                                setJustSavedQuizId(result.slug);
                                 setShowDonationModal(true);
                             }
                         }
@@ -1483,15 +1489,20 @@ const Editor = ({ onBack, onSave, initialData, setPage, user, setShowAuth, isAdm
                                             collect_email: form.collect_email || false,
                                             regenerateSlug: regenerateSlug
                                         };
-                                        const returnedId = await onSave(saveData, savedId || initialData?.id);
-                                        if(returnedId) {
-                                            setSavedId(returnedId);
+                                        // 編集時のみ数値IDを渡す（テンプレートのtemplateIdは除外）
+                                        const existingId = savedId || (initialData?.id && !initialData?.templateId ? initialData.id : null);
+                                        const result = await onSave(saveData, existingId);
+                                        if(result) {
+                                            setSavedId(result.id);
+                                            setSavedSlug(result.slug);
                                             // 新規作成時のみ寄付モーダルを表示
-                                            if (!initialData && !savedId) {
-                                                setJustSavedQuizId(returnedId);
+                                            // initialDataがない、またはtemplateIdのみの場合は新規作成
+                                            const isNewCreation = !initialData || (initialData.templateId && !initialData.id);
+                                            if (isNewCreation && !savedId) {
+                                                setJustSavedQuizId(result.slug);
                                                 setShowDonationModal(true);
                                             } else {
-                                                handlePublish(returnedId);
+                                                handlePublish(result.slug);
                                             }
                                         }
                                         setIsSaving(false);

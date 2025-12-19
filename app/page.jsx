@@ -726,10 +726,12 @@ const App = () => {
           
           await fetchQuizzes();
           
-          return savedQuiz.slug || savedQuiz.id;
+          // id（数値）とslug（文字列）の両方を返す
+          return { id: savedQuiz.id, slug: savedQuiz.slug || savedQuiz.id };
           
       } catch(e) { 
           alert('保存エラー: ' + e.message); 
+          return null;
       }
   };
 
