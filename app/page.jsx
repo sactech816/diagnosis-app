@@ -657,7 +657,10 @@ const App = () => {
               if (fetchError) throw fetchError;
               
               // 管理者でない場合、かつ自分のクイズでない場合は編集不可
-              if (!isAdmin && existingQuiz.user_id !== user?.id) {
+              // user_idがnullで、ユーザーも未ログインの場合は許可（同一セッションで作成したものと想定）
+              const userIdMatch = existingQuiz.user_id === user?.id || 
+                                  (existingQuiz.user_id === null && !user);
+              if (!isAdmin && !userIdMatch) {
                   alert('この診断クイズを編集する権限がありません。');
                   return;
               }
