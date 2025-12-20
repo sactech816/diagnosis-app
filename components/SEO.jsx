@@ -31,6 +31,7 @@ const SEO = ({ title, description, image }) => {
             <meta name="twitter:title" content={title} />
             <meta name="twitter:description" content={description} />
             <meta name="twitter:image" content={image || ""} />
+            <meta name="google-site-verification" content="YamlBcefF4QY3_gsWPgflXrn5EoM0Fndb-bQ8GMFVjU" />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }} />
         </>
     );
